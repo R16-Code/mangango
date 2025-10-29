@@ -10,127 +10,106 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
-  
-  // State Management dengan setState()
-  String _errorMessage = '';
-  bool _isLoading = false;
+  final _usernameC = TextEditingController();
+  final _passwordC = TextEditingController();
+  final _auth = AuthService();
 
-  void _handleLogin() async {
-    setState(() {
-      _errorMessage = '';
-      _isLoading = true;
-    });
-
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text;
-
-    if (username.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = 'Username dan Password tidak boleh kosong.';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // Panggil Service
-    final String? error = await _authService.login(username, password);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (error == null) {
-      // Login berhasil, navigasi ke Home
-      if (mounted) {
-        // Gunakan pushReplacementNamed agar user tidak bisa back ke login
-        Navigator.of(context).pushReplacementNamed(AppRouter.home);
-      }
-    } else {
-      // Login gagal, tampilkan pesan error
-      setState(() {
-        _errorMessage = error;
-      });
-    }
-  }
+  bool _loading = false;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
+    _usernameC.dispose();
+    _passwordC.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final username = _usernameC.text.trim();
+    final password = _passwordC.text;
+
+    setState(() => _loading = true);
+    final String? err = await _auth.login(username: username, password: password);
+    setState(() => _loading = false);
+
+    if (!mounted) return;
+
+    if (err == null) {
+      // Sukses → masuk Home
+      Navigator.pushReplacementNamed(context, AppRouter.home);
+    } else {
+      // Gagal → tampilkan pesan
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err)),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login Mangan Go')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Selamat Datang',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                prefixIcon: Icon(Icons.lock),
-              ),
-            ),
-            if (_errorMessage.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text(
-                      'MASUK',
-                      style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: const Text('Masuk'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _usernameC,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Username wajib diisi' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordC,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Password wajib diisi' : null,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
                     ),
+                    child: _loading
+                        ? const CircularProgressIndicator()
+                        : const Text('Masuk'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, AppRouter.register);
+                  },
+                  child: const Text('Belum punya akun? Daftar'),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed(AppRouter.register);
-              },
-              child: const Text('Belum punya akun? Daftar di sini', style: TextStyle(color: Colors.blue)),
-            ),
-          ],
+          ),
         ),
       ),
     );

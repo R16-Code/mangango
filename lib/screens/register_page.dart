@@ -10,156 +10,122 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  final _usernameC = TextEditingController();
+  final _passwordC = TextEditingController();
+  final _confirmC  = TextEditingController();
+  final _auth = AuthService();
 
-  // State Management dengan setState()
-  String _errorMessage = '';
-  bool _isLoading = false;
-
-  void _handleRegister() async {
-    setState(() {
-      _errorMessage = '';
-      _isLoading = true;
-    });
-
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
-
-    if (username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
-      setState(() {
-        _errorMessage = 'Semua kolom wajib diisi.';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    if (password != confirmPassword) {
-      setState(() {
-        _errorMessage = 'Konfirmasi Password tidak cocok.';
-        _isLoading = false;
-      });
-      return;
-    }
-    
-    // Minimal password 6 karakter (Batasan sederhana untuk pemula)
-    if (password.length < 6) {
-      setState(() {
-        _errorMessage = 'Password minimal 6 karakter.';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    // Panggil Service
-    final bool success = await _authService.register(username, password);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (success) {
-      // Registrasi berhasil, langsung navigasi ke Home
-      if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.home, (route) => false);
-      }
-    } else {
-      // Registrasi gagal (misalnya username sudah ada, dicek di AuthService)
-      setState(() {
-        _errorMessage = 'Registrasi gagal. Username mungkin sudah terdaftar.';
-      });
-    }
-  }
+  bool _loading = false;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _usernameC.dispose();
+    _passwordC.dispose();
+    _confirmC.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final username = _usernameC.text.trim();
+    final password = _passwordC.text;
+
+    setState(() => _loading = true);
+    final String? err = await _auth.register(username: username, password: password);
+    setState(() => _loading = false);
+
+    if (!mounted) return;
+
+    if (err == null) {
+      // Sukses → langsung ke Home (kita set session saat register)
+      Navigator.pushReplacementNamed(context, AppRouter.home);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err)),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Registrasi Akun')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Buat Akun Baru',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.teal),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 40),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(
-                labelText: 'Username',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                prefixIcon: Icon(Icons.person),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password (min. 6 karakter)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                prefixIcon: Icon(Icons.lock),
-              ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Konfirmasi Password',
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                prefixIcon: Icon(Icons.lock_reset),
-              ),
-            ),
-            if (_errorMessage.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _handleRegister,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Text(
-                      'DAFTAR',
-                      style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: const Text('Daftar'),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _usernameC,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.person_add),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Username wajib diisi' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordC,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Password wajib diisi' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _confirmC,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Konfirmasi Password',
+                    prefixIcon: Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Konfirmasi wajib diisi';
+                    if (v != _passwordC.text) return 'Password tidak sama';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
                     ),
+                    child: _loading
+                        ? const CircularProgressIndicator()
+                        : const Text('Daftar'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, AppRouter.login);
+                  },
+                  child: const Text('Sudah punya akun? Masuk'),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Kembali ke halaman Login
-              },
-              child: const Text('Sudah punya akun? Kembali ke Login', style: TextStyle(color: Colors.blue)),
-            ),
-          ],
+          ),
         ),
       ),
     );

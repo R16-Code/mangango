@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mangan_go/router.dart';
 
 class SaranKesanPage extends StatelessWidget {
   const SaranKesanPage({super.key});
@@ -6,6 +7,33 @@ class SaranKesanPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 2, // Saran & Kesan = tab ke-3
+        selectedItemColor: Colors.teal,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacementNamed(context, AppRouter.home);
+          } else if (index == 1) {
+            Navigator.pushReplacementNamed(context, AppRouter.profile);
+          } else if (index == 2) {
+            // sudah di Saran & Kesan, abaikan
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Beranda',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.lightbulb),
+            label: 'Saran & Kesan',
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(

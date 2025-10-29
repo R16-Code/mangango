@@ -7,70 +7,75 @@ class AuthService {
   final SessionService _sessionService = SessionService();
   final Box<Pengguna> _userBox = Hive.box<Pengguna>('users');
 
-  /// Mencari apakah username sudah terdaftar
+  /// Cari user by username (case-insensitive)
   Pengguna? getUserByUsername(String username) {
-    return _userBox.values.cast<Pengguna?>().firstWhere(
-          (user) => user?.username.toLowerCase() == username.toLowerCase(),
-          orElse: () => null,
-        );
+    final uname = username.trim().toLowerCase();
+    for (final u in _userBox.values) {
+      if (u.username.trim().toLowerCase() == uname) return u;
+    }
+    return null;
   }
 
-  /// Melakukan registrasi pengguna baru
-  Future<bool> register(String username, String password) async {
-    // Cek apakah username sudah ada
-    if (getUserByUsername(username) != null) {
-      return false; // Registrasi gagal karena username sudah terdaftar
+  /// Register user baru
+  /// return `null` jika sukses; string pesan error jika gagal.
+  Future<String?> register({
+    required String username,
+    required String password,
+  }) async {
+    final uname = username.trim();
+    if (uname.isEmpty || password.isEmpty) {
+      return 'Username dan password tidak boleh kosong.';
     }
 
-    // 1. Generate Salt
-    final String salt = SecurityUtils.generateSalt();
-    // 2. Hash Password
-    final String hashedPassword = SecurityUtils.hashPassword(password, salt);
-    
-    // 3. Buat objek Pengguna
-    final newUserId = DateTime.now().millisecondsSinceEpoch.toString(); // ID sederhana
-    final newPengguna = Pengguna(
-      id: newUserId,
-      username: username,
-      hashedPassword: hashedPassword,
+    // Cek duplikasi
+    final existing = getUserByUsername(uname);
+    if (existing != null) {
+      return 'Username sudah terdaftar.';
+    }
+
+    // Hash password
+    final salt = SecurityUtils.generateSalt();
+    final hash = SecurityUtils.hashPassword(password, salt);
+
+    // Buat ID sederhana (pakai waktu + random)
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+
+    final user = Pengguna(
+      id: id,
+      username: uname,
+      hashedPassword: hash,
       salt: salt,
-      reminderTimes: const ['07:00', '12:00', '19:00'], // Default
+      // reminderTimes default ada di model
     );
 
-    // 4. Simpan ke Hive
-    await _userBox.put(newUserId, newPengguna);
-    
-    // 5. Langsung set session setelah register
-    await _sessionService.setLoggedIn(userId: newUserId);
-
-    return true; // Registrasi berhasil
+    await _userBox.put(id, user);
+    // Opsional: langsung login setelah register
+    await _sessionService.setLoggedIn(userId: id);
+    return null;
   }
 
-  /// Melakukan proses login
-  Future<String?> login(String username, String password) async {
-    final Pengguna? user = getUserByUsername(username);
+  /// Login
+  /// return `null` jika sukses; string pesan error jika gagal.
+  Future<String?> login({
+    required String username,
+    required String password,
+  }) async {
+    final user = getUserByUsername(username);
+    if (user == null) return 'Username tidak ditemukan.';
 
-    if (user == null) {
-      return 'Username tidak ditemukan.';
-    }
-
-    // 1. Verifikasi Password
-    final bool isValid = SecurityUtils.verifyPassword(
-      password, 
-      user.hashedPassword, 
+    final isValid = SecurityUtils.verifyPassword(
+      password,
       user.salt,
+      user.hashedPassword,
     );
 
-    if (isValid) {
-      // 2. Jika valid, set session
-      await _sessionService.setLoggedIn(userId: user.id);
-      return null; // Login berhasil (mengembalikan null untuk sukses)
-    } else {
-      return 'Password salah.';
-    }
+    if (!isValid) return 'Password salah.';
+
+    await _sessionService.setLoggedIn(userId: user.id);
+    return null;
   }
 
-  /// Melakukan logout
+  /// Logout (hanya hapus session, tidak menghapus user)
   Future<void> logout() async {
     await _sessionService.logout();
   }

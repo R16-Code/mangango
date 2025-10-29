@@ -1,34 +1,51 @@
+import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Kelas utilitas untuk menangani deep-link ke aplikasi peta.
+/// Util sederhana untuk membuka Google Maps / URL.
+/// Versi ini kompatibel dengan url_launcher lama (pakai String, bukan Uri).
 class MapsLauncher {
-  /// Membuka Google Maps (atau Apple Maps di iOS) untuk navigasi
-  /// ke koordinat [latitude] dan [longitude] yang diberikan.
-  ///
-  /// File ini dipanggil dari:
-  /// - `lib/screens/detail_tempat_page.dart`
-  static Future<void> launchMaps(double latitude, double longitude) async {
-    // URL Skema universal untuk Google Maps
-    final String googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-    
-    // (Opsional) Untuk Apple Maps di iOS:
-    // final String appleMapsUrl = 'https://maps.apple.com/?q=$latitude,$longitude';
-
+  /// Buka URL apa pun (mis. tautan Google Maps)
+  static Future<void> openUrl(String url) async {
     try {
-      final Uri uri = Uri.parse(googleMapsUrl);
-      
-      // Cek apakah URL bisa dibuka
-      if (await canLaunchUrl(uri)) {
-        // Buka di aplikasi eksternal (bukan di dalam webview)
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (await canLaunch(url)) {
+        await launch(url); // versi lama: menerima String
       } else {
-        // Fallback jika Google Maps tidak terinstal atau gagal
-        print('Tidak dapat membuka $googleMapsUrl');
-        // Di aplikasi nyata, kita akan menampilkan dialog error
+        if (kDebugMode) {
+          debugPrint('MapsLauncher.openUrl: cannot launch $url');
+        }
       }
     } catch (e) {
-      print('Error saat membuka maps: $e');
+      if (kDebugMode) {
+        debugPrint('MapsLauncher.openUrl error: $e');
+      }
     }
   }
-}
 
+  /// Buka koordinat di Google Maps.
+  /// [label] opsional: nama tempat untuk query.
+  static Future<void> openMap(double latitude, double longitude, {String? label}) async {
+    final q = (label == null || label.trim().isEmpty)
+        ? '$latitude,$longitude'
+        : Uri.encodeComponent('$label ($latitude,$longitude)');
+
+    final url = 'https://www.google.com/maps/search/?api=1&query=$q';
+
+    try {
+      if (await canLaunch(url)) {
+        await launch(url); // versi lama: menerima String
+      } else {
+        if (kDebugMode) {
+          debugPrint('MapsLauncher.openMap: cannot launch $url');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('MapsLauncher.openMap error: $e');
+      }
+    }
+  }
+
+  static Future<void> launchUrl(String url) => openUrl(url);
+  static Future<void> openCoordinates(double latitude, double longitude, [String? label]) =>
+      openMap(latitude, longitude, label: label);
+}

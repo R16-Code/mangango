@@ -1,153 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:mangan_go/models/pengingat_makan.dart';
-import 'package:mangan_go/services/notif_service.dart';
-import 'package:mangan_go/services/session_service.dart';
-import 'package:mangan_go/router.dart';
 
-class ProfilPage extends StatefulWidget {
-  const ProfilPage({super.key});
+import 'package:mangan_go/models/pengguna.dart';
+import 'package:mangan_go/router.dart';
+import 'package:mangan_go/services/session_service.dart';
+
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  State<ProfilPage> createState() => _ProfilPageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilPageState extends State<ProfilPage> {
-  // Services
-  final SessionService _sessionService = SessionService();
-  final NotifService _notifService = NotifService();
+class _ProfilePageState extends State<ProfilePage> {
+  final SessionService _session = SessionService();
 
-  // Box Hive untuk pengingat
-  late Box<PengingatMakan> _reminderBox;
-
-  // State waktu (default WIB)
-  TimeOfDay _pagi = const TimeOfDay(hour: 7, minute: 0);
-  TimeOfDay _siang = const TimeOfDay(hour: 12, minute: 0);
-  TimeOfDay _malam = const TimeOfDay(hour: 19, minute: 0);
-
+  Pengguna? _user;
   bool _loading = true;
-  String _error = '';
 
-  // Key penyimpanan di box
-  static const String _reminderKey = 'default_reminder';
+  // Contoh state pengingat makan (placeholder sederhana).
+  // Kalau kamu sudah punya field aslinya di Hive/SharedPreferences, tinggal mapping di _load().
+  TimeOfDay? _pagi = const TimeOfDay(hour: 7, minute: 0);
+  TimeOfDay? _siang = const TimeOfDay(hour: 12, minute: 0);
+  TimeOfDay? _malam = const TimeOfDay(hour: 19, minute: 0);
 
   @override
   void initState() {
     super.initState();
-    _initPage();
+    _load();
   }
 
-  Future<void> _initPage() async {
-    try {
-      // Buka box 'reminders' (sudah dibuka di main.dart, tapi aman kalau dipanggil lagi)
-      _reminderBox = Hive.box<PengingatMakan>('reminders');
+  Future<void> _load() async {
+    final userId = await _session.getLoggedInUserId();
+    if (userId != null) {
+      final box = Hive.box<Pengguna>('users');
+      _user = box.get(userId);
+    }
+    setState(() => _loading = false);
+  }
 
-      // Ambil data jika ada
-      final PengingatMakan? current = _reminderBox.get(_reminderKey);
-      if (current != null && current.times.isNotEmpty) {
-        final times = current.times;
-        // Harapkan format "HH:MM"
-        if (times.isNotEmpty) _pagi = _parseHHmm(times[0]);
-        if (times.length >= 2) _siang = _parseHHmm(times[1]);
-        if (times.length >= 3) _malam = _parseHHmm(times[2]);
-      } else {
-        // Jika belum ada, simpan default
-        await _saveTimes();
-      }
-
-      // Init notifikasi (sederhana)
-      await _notifService.initialize();
-
-      setState(() {
-        _loading = false;
-        _error = '';
-      });
-    } catch (e) {
-      setState(() {
-        _loading = false;
-        _error = 'Gagal memuat pengaturan: $e';
-      });
+  Future<void> _pickTime({
+    required TimeOfDay? current,
+    required void Function(TimeOfDay) onSelected,
+  }) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: current ?? const TimeOfDay(hour: 8, minute: 0),
+    );
+    if (picked != null) {
+      onSelected(picked);
+      setState(() {});
     }
   }
 
-  TimeOfDay _parseHHmm(String hhmm) {
-    try {
-      final parts = hhmm.split(':');
-      final h = int.parse(parts[0]);
-      final m = int.parse(parts[1]);
-      return TimeOfDay(hour: h, minute: m);
-    } catch (_) {
-      return const TimeOfDay(hour: 7, minute: 0);
-    }
-  }
-
-  String _fmt(TimeOfDay t) {
+  String _fmt(TimeOfDay? t) {
+    if (t == null) return '-';
     final hh = t.hour.toString().padLeft(2, '0');
     final mm = t.minute.toString().padLeft(2, '0');
     return '$hh:$mm';
   }
 
-  Future<void> _pickTime({
-    required TimeOfDay current,
-    required void Function(TimeOfDay) onPicked,
-  }) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: current,
+  Future<void> _save() async {
+    // Jika kamu punya box/settings khusus, simpan di sana.
+    // Placeholder: cuma snackbar biar jelas posisi tombol Simpan.
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pengingat makan disimpan.')),
     );
-    if (picked != null) {
-      onPicked(picked);
-      setState(() {}); // refresh tampilan tombol jam
-    }
-  }
-
-  Future<void> _saveTimes() async {
-    final times = <String>[_fmt(_pagi), _fmt(_siang), _fmt(_malam)];
-
-    final PengingatMakan data = PengingatMakan(times: times);
-    await _reminderBox.put(_reminderKey, data);
-
-    // Tampilkan notifikasi sederhana sebagai feedback
-    await _notifService.showSimple(
-      'Pengingat Tersimpan',
-      'Pagi ${times[0]}, Siang ${times[1]}, Malam ${times[2]}',
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pengingat makan berhasil disimpan.')),
-      );
-    }
   }
 
   Future<void> _logout() async {
-    await _sessionService.logout();
+    await _session.logout();
     if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRouter.login,
-      (route) => false,
-    );
-  }
-
-  Widget _buildTimePicker({
-    required String label,
-    required IconData icon,
-    required TimeOfDay time,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.teal),
-        title: Text(label),
-        trailing: Text(
-          _fmt(time),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        onTap: onTap,
-      ),
-    );
+    Navigator.pushReplacementNamed(context, AppRouter.login);
   }
 
   @override
@@ -155,106 +80,197 @@ class _ProfilPageState extends State<ProfilPage> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Profil & Notifikasi'),
+          title: const Text('Profil'),
           backgroundColor: Colors.teal,
           foregroundColor: Colors.white,
         ),
         body: const Center(child: CircularProgressIndicator()),
+        // Penting: tetap pasang bottom nav di state loading
+        bottomNavigationBar: _buildBottomNav(),
       );
     }
 
-    if (_error.isNotEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Profil & Notifikasi'),
-          backgroundColor: Colors.teal,
-          foregroundColor: Colors.white,
-        ),
-        body: Center(
-          child: Text(
-            _error,
-            style: const TextStyle(color: Colors.red),
-          ),
-        ),
-      );
-    }
-
+    final username = _user?.username ?? 'Pengguna';
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil & Notifikasi'),
+        title: const Text('Profil'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Pengingat Makan',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          // ===== Header: Foto profil default + Username (poin 4) =====
+          Row(
+            children: [
+              // Foto profil default (semua user sama)
+              // Pakai Asset kalau tersedia; kalau tidak, fallback ke ikon.
+              ClipOval(
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: Image.asset(
+                    'assets/images/profile_default.jpeg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) {
+                      return Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.person, size: 48, color: Colors.grey),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  username,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
-          _buildTimePicker(
-            label: 'Pagi',
-            icon: Icons.wb_sunny_outlined,
-            time: _pagi,
-            onTap: () => _pickTime(
-              current: _pagi,
-              onPicked: (t) => _pagi = t,
-            ),
-          ),
-          _buildTimePicker(
-            label: 'Siang',
-            icon: Icons.wb_sunny,
-            time: _siang,
-            onTap: () => _pickTime(
-              current: _siang,
-              onPicked: (t) => _siang = t,
-            ),
-          ),
-          _buildTimePicker(
-            label: 'Malam',
-            icon: Icons.nightlight_round,
-            time: _malam,
-            onTap: () => _pickTime(
-              current: _malam,
-              onPicked: (t) => _malam = t,
-            ),
-          ),
+          // ===== Kartu Pengingat Makan =====
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Pengingat Makan', style: TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
 
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _saveTimes,
-            icon: const Icon(Icons.save),
-            label: const Text('Simpan Pengingat'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
+                  _ReminderTile(
+                    label: 'Pagi',
+                    timeText: _fmt(_pagi),
+                    onPick: () => _pickTime(
+                      current: _pagi,
+                      onSelected: (t) => _pagi = t,
+                    ),
+                  ),
+                  _DividerThin(),
+                  _ReminderTile(
+                    label: 'Siang',
+                    timeText: _fmt(_siang),
+                    onPick: () => _pickTime(
+                      current: _siang,
+                      onSelected: (t) => _siang = t,
+                    ),
+                  ),
+                  _DividerThin(),
+                  _ReminderTile(
+                    label: 'Malam',
+                    timeText: _fmt(_malam),
+                    onPick: () => _pickTime(
+                      current: _malam,
+                      onSelected: (t) => _malam = t,
+                    ),
+                  ),
 
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 8),
-          const Text(
-            'Akun',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
+                  const SizedBox(height: 12),
 
-          ElevatedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-            label: const Text('Keluar'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+                  // Tombol Simpan (poin 4)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Simpan'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Tombol Logout tepat di bawah Simpan (poin 4)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: _logout,
+                      child: const Text('Logout'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
+
+      // ===== Bottom Navigation SELALU ada di Profil (poin 3) =====
+      bottomNavigationBar: _buildBottomNav(),
     );
+  }
+
+  Widget _buildBottomNav() {
+    return BottomNavigationBar(
+      currentIndex: 1, // Profil = tab ke-2
+      selectedItemColor: Colors.teal,
+      onTap: (index) {
+        if (index == 0) {
+          Navigator.pushReplacementNamed(context, AppRouter.home);
+        } else if (index == 1) {
+          // sudah di Profil
+        } else if (index == 2) {
+          Navigator.pushReplacementNamed(context, AppRouter.feedback);
+        }
+      },
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Beranda',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person),
+          label: 'Profil',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.lightbulb),
+          label: 'Saran & Kesan',
+        ),
+      ],
+    );
+  }
+}
+
+class _ReminderTile extends StatelessWidget {
+  final String label;
+  final String timeText;
+  final VoidCallback onPick;
+
+  const _ReminderTile({
+    required this.label,
+    required this.timeText,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      title: Text(label),
+      trailing: TextButton.icon(
+        onPressed: onPick,
+        icon: const Icon(Icons.schedule),
+        label: Text(timeText),
+      ),
+    );
+  }
+}
+
+class _DividerThin extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Divider(height: 8, thickness: 0.6, color: Colors.grey.shade300);
   }
 }

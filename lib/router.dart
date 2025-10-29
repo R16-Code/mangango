@@ -22,7 +22,7 @@ class AppRouter {
     login: (_) => const LoginPage(),
     register: (_) => const RegisterPage(),
     home: (_) => const HomePage(),
-    profile: (_) => const ProfilPage(),
+    profile: (_) => const ProfilePage(),
     feedback: (_) => const SaranKesanPage(),
   };
 

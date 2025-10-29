@@ -29,8 +29,12 @@ class _HomePageState extends State<HomePage> {
   List<Tempat> _listTempat = [];
 
   final TextEditingController _searchController = TextEditingController();
-  double _minRating = 0;
-  double _maxDistanceKm = 30;
+  double _minRating = 0;   // akan diatur dari dropdown
+  double _maxDistanceKm = 30; // default cocok dengan opsi dropdown
+
+  // Opsi dropdown
+  final List<double> _ratingOptions = const [0, 1, 2, 3, 4, 5];
+  final List<double> _distanceOptions = const [1, 2, 3, 5, 10, 15, 20, 30];
 
   @override
   void initState() {
@@ -167,50 +171,58 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // Filter sliders
+          // ====== Filter: Dropdown Rating & Jarak (ganti slider) ======
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
                 Expanded(
-                  child: Column(
-                    children: [
-                      const Text('Rating Min'),
-                      Slider(
-                        value: _minRating,
-                        min: 0,
-                        max: 5,
-                        divisions: 5,
-                        label: _minRating.toStringAsFixed(1),
-                        onChanged: (v) {
-                          setState(() => _minRating = v);
-                          _refreshList();
-                        },
-                      ),
-                    ],
+                  child: DropdownButtonFormField<double>(
+                    value: _minRating,
+                    decoration: const InputDecoration(
+                      labelText: 'Rating minimal',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: _ratingOptions
+                        .map((r) => DropdownMenuItem(
+                              value: r,
+                              child: Text(r.toStringAsFixed(0)),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val == null) return;
+                      setState(() => _minRating = val);
+                      _refreshList();
+                    },
                   ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    children: [
-                      const Text('Jarak Maks (km)'),
-                      Slider(
-                        value: _maxDistanceKm,
-                        min: 1,
-                        max: 30,
-                        divisions: 29,
-                        label: '${_maxDistanceKm.toStringAsFixed(0)} km',
-                        onChanged: (v) {
-                          setState(() => _maxDistanceKm = v);
-                          _refreshList();
-                        },
-                      ),
-                    ],
+                  child: DropdownButtonFormField<double>(
+                    value: _maxDistanceKm,
+                    decoration: const InputDecoration(
+                      labelText: 'Jarak maks (km)',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: _distanceOptions
+                        .map((d) => DropdownMenuItem(
+                              value: d,
+                              child: Text('${d.toStringAsFixed(0)} km'),
+                            ))
+                        .toList(),
+                    onChanged: (val) {
+                      if (val == null) return;
+                      setState(() => _maxDistanceKm = val);
+                      _refreshList();
+                    },
                   ),
                 ),
               ],
             ),
           ),
+          // ============================================================
 
           Expanded(
             child: _listTempat.isEmpty

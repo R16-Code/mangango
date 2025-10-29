@@ -15,19 +15,28 @@ class _SplashGateState extends State<SplashGate> {
   @override
   void initState() {
     super.initState();
-    _checkLogin();
+    // Pastikan dieksekusi setelah frame pertama ter-build
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkLogin());
   }
 
   Future<void> _checkLogin() async {
-    await Future.delayed(const Duration(seconds: 2)); // Efek splash
-    final loggedIn = await _session.isLoggedIn();
+    try {
+      // Efek splash singkat
+      await Future.delayed(const Duration(seconds: 2));
 
-    if (!mounted) return;
+      final userId = await _session.getLoggedInUserId(); // aman: auto-open box
+      if (!mounted) return;
 
-    if (loggedIn) {
-      Navigator.pushReplacementNamed(context, AppRouter.home);
-    } else {
-      Navigator.pushReplacementNamed(context, AppRouter.login);
+      final loggedIn = userId != null;
+      if (loggedIn) {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.home, (_) => false);
+      } else {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.login, (_) => false);
+      }
+    } catch (_) {
+      // Hard fallback: kalau ada error apa pun, arahkan ke login
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.login, (_) => false);
     }
   }
 
@@ -39,18 +48,12 @@ class _SplashGateState extends State<SplashGate> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.restaurant_menu,
-              size: 90,
-              color: Colors.white,
-            ),
+            Icon(Icons.restaurant_menu, size: 90, color: Colors.white),
             SizedBox(height: 16),
             Text(
               'Mangan Go',
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+                fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white,
               ),
             ),
             SizedBox(height: 8),

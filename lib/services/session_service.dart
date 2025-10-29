@@ -1,32 +1,30 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive/hive.dart';
 
 class SessionService {
-  static const String _isLoggedInKey = 'is_logged_in';
-  static const String _currentUserIdKey = 'current_user_id';
+  static const String _boxName = 'session';
+  static const String _keyLoggedUserId = 'loggedUserId';
 
-  /// Menyimpan status login dan ID pengguna yang sedang aktif.
+  Future<Box> _box() async {
+    if (!Hive.isBoxOpen(_boxName)) {
+      await Hive.openBox(_boxName);
+    }
+    return Hive.box(_boxName);
+  }
+
   Future<void> setLoggedIn({required String userId}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_isLoggedInKey, true);
-    await prefs.setString(_currentUserIdKey, userId);
+    final box = await _box();
+    await box.put(_keyLoggedUserId, userId);
   }
 
-  /// Mengambil status apakah pengguna sedang login.
-  Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_isLoggedInKey) ?? false;
+  Future<String?> getLoggedInUserId() async {
+    final box = await _box();
+    final v = box.get(_keyLoggedUserId);
+    if (v is String && v.isNotEmpty) return v;
+    return null;
   }
 
-  /// Mengambil ID pengguna yang sedang login.
-  Future<String?> getCurrentUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_currentUserIdKey);
-  }
-
-  /// Melakukan logout: menghapus status login dan ID pengguna.
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_isLoggedInKey, false);
-    await prefs.remove(_currentUserIdKey);
+    final box = await _box();
+    await box.delete(_keyLoggedUserId);
   }
 }
