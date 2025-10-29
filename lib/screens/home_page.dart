@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mangan_go/models/tempat.dart';
 import 'package:mangan_go/router.dart';
-import 'package:mangan_go/screens/profil_page.dart';
-import 'package:mangan_go/screens/saran_kesan_page.dart';
 import 'package:mangan_go/services/lokasi_service.dart';
 import 'package:mangan_go/services/tempat_service.dart';
 
@@ -15,299 +13,274 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
-  bool _isLoading = true;
-  String _errorMessage = '';
+  final LokasiService _lokasiService = LokasiService();
+  final TempatService _tempatService = TempatService();
+
+  bool _loading = true;
+
+  // flag agar banner dapat di-dismiss
+  bool _showDeniedBanner = false;
+
+  // posisi user & fallback default (Tugu Jogja)
   Position? _userPosition;
+  final double _fallbackLat = -7.782889;
+  final double _fallbackLon = 110.367083;
 
   List<Tempat> _listTempat = [];
-  List<Tempat> _originalListTempat = [];
 
   final TextEditingController _searchController = TextEditingController();
-  double? _selectedMaxJarak;
-  double? _selectedMinRating;
-
-  final TempatService _tempatService = TempatService();
-  final LokasiService _lokasiService = LokasiService();
+  double _minRating = 0;
+  double _maxDistanceKm = 30;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _initLoadPlaces();
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+  Future<void> _initLoadPlaces() async {
+    final (pos, status) = await _lokasiService.getCurrentPosition();
 
-    try {
-      _userPosition = await _lokasiService.getCurrentLocation();
-
-      // Panggil service untuk mengambil data
-      // Service akan menghitung jarak dan menyimpannya di 'jarakKm'
-      final tempat = await _tempatService.getSortedPlaces(_userPosition!);
-      
-      setState(() {
-        _originalListTempat = tempat;
-        _listTempat = List.from(_originalListTempat); // Gunakan List.from
-        _isLoading = false;
-      });
-
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+    if (pos != null) {
+      _userPosition = pos;
+      _showDeniedBanner = false;
+    } else {
+      // pakai fallback (Tugu Jogja)
+      _userPosition = null; // kita kirim null ke service, lalu service pakai fallback lat/lon
+      if (status == "denied" || status == "denied_forever") {
+        _showDeniedBanner = true; // tampil banner
+      }
     }
+
+    _refreshList();
+    setState(() => _loading = false);
   }
 
-  void _applyFilter() {
-    String query = _searchController.text.toLowerCase();
-    
-    // Mulai dari data asli
-    List<Tempat> filteredList = List.from(_originalListTempat);
+  void _refreshList() {
+    final result = _tempatService.searchFilterSort(
+      userPos: _userPosition,
+      searchKeyword: _searchController.text.trim(),
+      minRating: _minRating,
+      maxDistanceKm: _maxDistanceKm,
+      fallbackLat: _fallbackLat,
+      fallbackLon: _fallbackLon,
+    );
 
-    // Filter Search (Nama)
-    if (query.isNotEmpty) {
-      filteredList = filteredList.where((tempat) {
-        return tempat.nama.toLowerCase().contains(query);
-      }).toList();
-    }
-
-    // Filter Jarak (Max Jarak) - Gunakan jarakKm yang sudah dihitung
-    if (_selectedMaxJarak != null) {
-      filteredList = filteredList.where((tempat) {
-        // tempat.jarakKm diisi saat _loadData
-        return tempat.jarakKm != null && tempat.jarakKm! <= _selectedMaxJarak!;
-      }).toList();
-    }
-
-    // Filter Rating (Min Rating)
-    if (_selectedMinRating != null) {
-      filteredList = filteredList.where((tempat) {
-        return tempat.rating >= _selectedMinRating!;
-      }).toList();
-    }
-
-    setState(() {
-      _listTempat = filteredList;
-    });
+    setState(() => _listTempat = result);
   }
 
-  Widget _buildHomePageContent() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_errorMessage.isNotEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Text('Error: $_errorMessage\n\nPastikan GPS aktif dan izin lokasi diberikan.', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-        ),
+  Future<void> _retryGetRealLocation() async {
+    final (newPos, status) = await _lokasiService.getCurrentPosition();
+
+    if (newPos != null) {
+      _userPosition = newPos;
+      _showDeniedBanner = false;
+      _refreshList();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lokasi ditemukan — jarak diperbarui ✅')),
       );
-    }
-    return Column(
-      children: [
-        _buildSearchFilter(),
-        Expanded(child: _buildPlaceList()),
-      ],
-    );
-  }
-
-  Widget _buildSearchFilter() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.teal.shade50,
-      child: Column(
-        children: [
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Cari nama tempat makan...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              filled: true,
-              fillColor: Colors.white,
-            ),
-            onChanged: (value) => _applyFilter(),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildFilterDropdown(
-                hint: 'Jarak',
-                value: _selectedMaxJarak,
-                items: {
-                  '≤ 1 km': 1.0,
-                  '≤ 3 km': 3.0,
-                  '≤ 5 km': 5.0,
-                },
-                onChanged: (val) {
-                  setState(() { _selectedMaxJarak = val; });
-                  _applyFilter();
-                },
-              ),
-              _buildFilterDropdown(
-                hint: 'Rating',
-                value: _selectedMinRating,
-                items: {
-                  'Min 3.0 ★': 3.0,
-                  'Min 4.0 ★': 4.0,
-                  'Min 4.5 ★': 4.5,
-                },
-                onChanged: (val) {
-                  setState(() { _selectedMinRating = val; });
-                  _applyFilter();
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () {
-                  setState(() {
-                    _searchController.clear();
-                    _selectedMaxJarak = null;
-                    _selectedMinRating = null;
-                    _listTempat = List.from(_originalListTempat); // Reset
-                  });
-                },
-              ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterDropdown<T>({
-    required String hint,
-    required T? value,
-    required Map<String, T> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return DropdownButtonHideUnderline(
-      child: DropdownButton<T>(
-        hint: Text(hint),
-        value: value,
-        items: [
-          DropdownMenuItem<T>(
-            value: null,
-            child: Text(hint, style: TextStyle(color: Colors.grey[600])),
-          ),
-          ...items.entries.map((entry) {
-            return DropdownMenuItem<T>(
-              value: entry.value,
-              child: Text(entry.key),
-            );
-          }).toList(),
-        ],
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildPlaceList() {
-    if (_listTempat.isEmpty) {
-      return const Center(child: Text('Tidak ada tempat makan yang sesuai filter.'));
+      return;
     }
 
-    return ListView.builder(
-      itemCount: _listTempat.length,
-      itemBuilder: (context, index) {
-        final tempat = _listTempat[index];
-        
-        // --- PERBAIKAN DI SINI ---
-        // Ambil jarakKm yang sudah dihitung, jangan hitung ulang
-        final jarak = tempat.jarakKm ?? 0.0;
-        // --- AKHIR PERBAIKAN ---
-
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            title: Text(tempat.nama, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(tempat.alamat, maxLines: 2, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 16),
-                    Text(' ${tempat.rating.toStringAsFixed(1)}'),
-                    const SizedBox(width: 10),
-                    Icon(Icons.schedule, color: Colors.grey[600], size: 16),
-                    Text(' ${tempat.jamBuka} - ${tempat.jamTutup}'),
-                  ],
-                ),
-              ],
-            ),
-            trailing: Text(
-              '${jarak.toStringAsFixed(1)} km',
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal, fontSize: 14),
-            ),
-            onTap: () {
-              // --- PERBAIKAN DI SINI ---
-              // Navigasi ke Detail, kirim objek 'tempat' sebagai argumen
-              Navigator.pushNamed(context, AppRouter.detail, arguments: tempat);
-              // --- AKHIR PERBAIKAN ---
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  Widget _getSelectedPage() {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildHomePageContent();
-      case 1:
-        return const ProfilPage();
-      case 2:
-        return const SaranKesanPage();
-      default:
-        return _buildHomePageContent();
+    if (!mounted) return;
+    if (status == "denied_forever") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Izin lokasi diblokir permanen ⚠️')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat memperoleh lokasi 😕')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Mangan Go (Jogja)'),
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mangan Go (Jogja)'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
-      body: _getSelectedPage(),
+      body: Column(
+        children: [
+          // Banner B2 (dismissible)
+          if (_showDeniedBanner)
+            Dismissible(
+              key: const Key('denied_banner'),
+              direction: DismissDirection.horizontal,
+              onDismissed: (_) {
+                setState(() => _showDeniedBanner = false);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                color: Colors.orange.shade200,
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.black87),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Lokasi tidak diizinkan — menggunakan Tugu Jogja',
+                        style: TextStyle(fontSize: 13, color: Colors.black87),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _retryGetRealLocation,
+                      child: const Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // Search
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => _refreshList(),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.grey.shade200,
+                hintText: 'Cari tempat makan...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+
+          // Filter sliders
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      const Text('Rating Min'),
+                      Slider(
+                        value: _minRating,
+                        min: 0,
+                        max: 5,
+                        divisions: 5,
+                        label: _minRating.toStringAsFixed(1),
+                        onChanged: (v) {
+                          setState(() => _minRating = v);
+                          _refreshList();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      const Text('Jarak Maks (km)'),
+                      Slider(
+                        value: _maxDistanceKm,
+                        min: 1,
+                        max: 30,
+                        divisions: 29,
+                        label: '${_maxDistanceKm.toStringAsFixed(0)} km',
+                        onChanged: (v) {
+                          setState(() => _maxDistanceKm = v);
+                          _refreshList();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: _listTempat.isEmpty
+                ? const Center(child: Text('Tidak ada tempat yang cocok 😕'))
+                : ListView.builder(
+                    itemCount: _listTempat.length,
+                    itemBuilder: (context, index) {
+                      final t = _listTempat[index];
+                      final jarak = t.distanceKm?.toStringAsFixed(2) ?? '-';
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(12),
+                          title: Text(
+                            t.nama,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(t.alamat, maxLines: 2, overflow: TextOverflow.ellipsis),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.star, size: 16, color: Colors.amber),
+                                  Text('${t.rating}   •   $jarak km'),
+                                ],
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRouter.detail,
+                              arguments: t,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
+        currentIndex: 0,
+        selectedItemColor: Colors.teal,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.pushReplacementNamed(context, AppRouter.profile);
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, AppRouter.feedback);
+          }
+        },
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Home',
+            label: 'Beranda',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profil & Notifikasi',
+            label: 'Profil',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.lightbulb),
             label: 'Saran & Kesan',
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.teal,
-        onTap: _onItemTapped,
       ),
     );
   }

@@ -1,26 +1,14 @@
-import 'package:haversine_distance/haversine_distance.dart';
+import 'dart:math';
 
-class HaversineUtils {
-  /// Menghitung jarak antara dua koordinat dalam kilometer.
-  /// 
-  /// [lat1], [lon1]: Koordinat titik 1 (misalnya, lokasi pengguna).
-  /// [lat2], [lon2]: Koordinat titik 2 (misalnya, lokasi tempat makan).
-  ///
-  /// Menggunakan package `haversine_distance`.
-  static double calculateDistanceKm(
-      double lat1, double lon1, double lat2, double lon2) {
-    
-    // Konversi ke format GeoCoordinate yang dibutuhkan oleh package
-    final startCoordinate = GeoCoordinate(lat1, lon1);
-    final endCoordinate = GeoCoordinate(lat2, lon2);
-
-    final haversine = HaversineDistance();
-
-    // Mengembalikan jarak dalam kilometer
-    return haversine.haversine(
-      startCoordinate,
-      endCoordinate,
-      Unit.KM,
-    );
-  }
+double haversineDistanceKm(double lat1, double lon1, double lat2, double lon2) {
+  const R = 6371.0; // km
+  double dLat = _deg2rad(lat2 - lat1);
+  double dLon = _deg2rad(lon2 - lon1);
+  double a = sin(dLat/2) * sin(dLat/2) +
+      cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) *
+      sin(dLon/2) * sin(dLon/2);
+  double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  return R * c;
 }
+
+double _deg2rad(double deg) => deg * (pi / 180.0);

@@ -1,103 +1,108 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:hive/hive.dart';
-import 'package:geolocator/geolocator.dart'; // Untuk tipe Position
+import 'package:geolocator/geolocator.dart';
 import 'package:mangan_go/models/tempat.dart';
 import 'package:mangan_go/utils/haversine.dart';
 
 class TempatService {
   final Box<Tempat> _tempatBox = Hive.box<Tempat>('places');
-  static const String _placesKey = 'hasSeededPlaces'; // Kunci untuk SharedPreferences/Hive
+  static const String _placesKey = 'hasSeededPlaces';
 
-  /// Mengecek apakah data tempat makan sudah pernah di-seed ke Hive.
+  /// Cek apakah seeding places sudah dilakukan
   Future<bool> hasSeeded() async {
-    // Kita bisa menggunakan box sederhana atau SharedPreferences, kita gunakan box saja
-    final settingBox = await Hive.openBox('settings');
+    final settingBox = Hive.box('settings');
     return settingBox.get(_placesKey, defaultValue: false) as bool;
   }
 
-  /// Memuat data dari JSON dan menyimpannya ke Hive.
-  Future<void> seedPlacesFromJson(BuildContext context) async {
-    if (await hasSeeded()) {
-      return; // Sudah pernah di-seed, lewati.
+  /// Seed data tempat dari assets JSON ke Hive (sekali saja)
+  Future<void> seedPlacesFromJson() async {
+    if (await hasSeeded()) return;
+
+    final jsonStr = await rootBundle.loadString('assets/data/seed_places.json');
+    final List list = json.decode(jsonStr) as List;
+
+    for (final m in list) {
+      final t = Tempat.fromJson(Map<String, dynamic>.from(m as Map));
+      await _tempatBox.put(t.id, t);
     }
 
-    print('Seeding data tempat makan...');
-    try {
-      // Baca file JSON dari assets
-      final String response = await rootBundle.loadString('assets/data/seed_places.json');
-      final List<dynamic> data = json.decode(response);
-
-      // Konversi data JSON ke model Tempat dan simpan ke Hive
-      for (var item in data) {
-        final tempat = Tempat.fromJson(item as Map<String, dynamic>);
-        // Menggunakan id sebagai kunci
-        await _tempatBox.put(tempat.id.toString(), tempat);
-      }
-
-      // Tandai bahwa proses seeding sudah selesai
-      final settingBox = await Hive.openBox('settings');
-      await settingBox.put(_placesKey, true);
-      print('Seeding berhasil: ${_tempatBox.length} tempat tersimpan.');
-
-    } catch (e) {
-      print('Gagal melakukan seeding data: $e');
-      throw Exception('Gagal memuat data tempat. Pastikan seed_places.json valid.');
-    }
+    final settingBox = Hive.box('settings');
+    await settingBox.put(_placesKey, true);
   }
 
-  /// Mendapatkan semua tempat makan dari Hive.
-  List<Tempat> getAllPlaces() {
-    return _tempatBox.values.toList().cast<Tempat>();
-  }
+  /// Ambil semua tempat dari Hive
+  List<Tempat> getAll() => _tempatBox.values.toList();
 
-  /// Mendapatkan data tempat makan berdasarkan ID.
-  Tempat? getPlaceById(int id) {
-    return _tempatBox.get(id.toString());
-  }
-
-  // --- Logika Pencarian, Filter, dan Sorting ---
-
-  /// Mendapatkan daftar tempat makan yang sudah diurutkan berdasarkan jarak.
-  List<Tempat> getSortedPlaces(Position userLocation, {
+  /// Cari + filter + sort (berdasarkan jarak terdekat).
+  ///
+  /// - Jika [userPos] TIDAK null → jarak dihitung terhadap posisi user.
+  /// - Jika [userPos] null dan [fallbackLat]/[fallbackLon] tersedia → jarak dihitung terhadap fallback.
+  /// - Jika semuanya null → jarak diset 0 (tidak ideal, tapi tetap aman).
+  List<Tempat> searchFilterSort({
+    required Position? userPos,
     String? searchKeyword,
-    double minRating = 0.0,
-    double maxDistanceKm = double.infinity,
+    double minRating = 0,
+    double maxDistanceKm = 9999,
+    double? fallbackLat,
+    double? fallbackLon,
   }) {
-    List<Tempat> filteredList = getAllPlaces();
+    var list = getAll();
 
-    // 1. Hitung Jarak dan Tambahkan ke Objek (Temporary property)
-    for (var tempat in filteredList) {
-      tempat.distanceKm = HaversineUtils.calculateDistanceKm(
-        userLocation.latitude,
-        userLocation.longitude,
-        tempat.latitude,
-        tempat.longitude,
-      );
-    }
-    
-    // 2. Filter (Search Keyword)
-    if (searchKeyword != null && searchKeyword.isNotEmpty) {
-      final keywordLower = searchKeyword.toLowerCase();
-      filteredList = filteredList.where((tempat) {
-        return tempat.nama.toLowerCase().contains(keywordLower) || 
-               tempat.alamat.toLowerCase().contains(keywordLower);
-      }).toList();
+    // 1) Hitung jarak
+    if (userPos != null) {
+      for (final t in list) {
+        t.distanceKm = haversineDistanceKm(
+          userPos.latitude, userPos.longitude, t.latitude, t.longitude,
+        );
+      }
+    } else if (fallbackLat != null && fallbackLon != null) {
+      for (final t in list) {
+        t.distanceKm = haversineDistanceKm(
+          fallbackLat, fallbackLon, t.latitude, t.longitude,
+        );
+      }
+    } else {
+      // fallback terakhir: tidak ada posisi sama sekali
+      for (final t in list) {
+        t.distanceKm = 0;
+      }
     }
 
-    // 3. Filter (Rating dan Jarak)
-    filteredList = filteredList.where((tempat) {
-      final meetsRating = tempat.rating >= minRating;
-      final meetsDistance = tempat.distanceKm <= maxDistanceKm;
-      return meetsRating && meetsDistance;
+    // 2) Filter keyword (nama/alamat)
+    if (searchKeyword != null && searchKeyword.trim().isNotEmpty) {
+      final q = searchKeyword.toLowerCase().trim();
+      list = list.where((t) =>
+        t.nama.toLowerCase().contains(q) || t.alamat.toLowerCase().contains(q)
+      ).toList();
+    }
+
+    // 3) Filter rating & jarak maksimum
+    list = list.where((t) {
+      final dist = t.distanceKm ?? 0;
+      return t.rating >= minRating && dist <= maxDistanceKm;
     }).toList();
 
-
-    // 4. Sorting (Wajib berdasarkan jarak terdekat)
-    filteredList.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
-
-    return filteredList;
+    // 4) Sort jarak terdekat
+    list.sort((a, b) => (a.distanceKm ?? 0).compareTo(b.distanceKm ?? 0));
+    return list;
   }
 
-  Future getTempatTerdekat(Position position) async {}
+  /// Alias untuk kompatibilitas kode lama (jika masih ada pemanggilan getSortedPlaces)
+  List<Tempat> getSortedPlaces({
+    required Position? userPos,
+    String? searchKeyword,
+    double minRating = 0,
+    double maxDistanceKm = 9999,
+    double? fallbackLat,
+    double? fallbackLon,
+  }) =>
+      searchFilterSort(
+        userPos: userPos,
+        searchKeyword: searchKeyword,
+        minRating: minRating,
+        maxDistanceKm: maxDistanceKm,
+        fallbackLat: fallbackLat,
+        fallbackLon: fallbackLon,
+      );
 }

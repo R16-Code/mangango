@@ -1,8 +1,8 @@
 import 'package:hive/hive.dart';
 
-part 'tempat.g.dart'; // File ini akan digenerate oleh build_runner
+part 'tempat.g.dart'; // File ini digenerate oleh build_runner
 
-// Adaptor typeId 1: Tempat
+/// Adaptor typeId 1: Tempat
 @HiveType(typeId: 1)
 class Tempat extends HiveObject {
   @HiveField(0)
@@ -23,20 +23,25 @@ class Tempat extends HiveObject {
   @HiveField(5)
   String kisaranHarga;
 
+  /// Simpan rating sebagai double (mis. 4.6)
   @HiveField(6)
   double rating;
 
+  /// Jam buka dalam format "HH:mm"
   @HiveField(7)
   String jamBuka;
 
+  /// Jam tutup dalam format "HH:mm"
   @HiveField(8)
   String jamTutup;
 
+  /// URL Google Maps (opsional)
   @HiveField(9)
   String urlMaps;
 
-  // Variabel non-Hive untuk menyimpan jarak (digunakan di UI/Service)
-  double? jarakKm; 
+  /// Field non-persisten: jarak dari posisi user (Tidak ada anotasi HiveField,
+  /// jadi TIDAK ikut diserialisasi oleh Hive).
+  double? distanceKm;
 
   Tempat({
     required this.id,
@@ -49,23 +54,22 @@ class Tempat extends HiveObject {
     required this.jamBuka,
     required this.jamTutup,
     this.urlMaps = '',
-    this.jarakKm,
+    this.distanceKm,
   });
 
-  // Factory constructor untuk memuat data dari JSON
+  /// Factory untuk memuat dari JSON (assets seed)
   factory Tempat.fromJson(Map<String, dynamic> json) {
     return Tempat(
       id: json['id'] as int,
       nama: json['nama'] as String,
       alamat: json['alamat'] as String,
-      latitude: json['latitude'] as double,
-      longitude: json['longitude'] as double,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
       kisaranHarga: json['kisaranHarga'] as String,
-      // Pastikan rating dibaca sebagai double
-      rating: (json['rating'] as num).toDouble(), 
+      rating: (json['rating'] as num).toDouble(),
       jamBuka: json['jamBuka'] as String,
       jamTutup: json['jamTutup'] as String,
-      urlMaps: json['urlMaps'] as String? ?? '',
+      urlMaps: (json['urlMaps'] as String?) ?? '',
     );
   }
 }

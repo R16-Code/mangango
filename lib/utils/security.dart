@@ -2,41 +2,27 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 
+/// Util keamanan sederhana berbasis SHA-256 + salt.
+/// Dibuat sebagai drop-in untuk menggantikan referensi `SecurityUtils`
+/// yang dipakai di `auth_service.dart` agar tidak perlu ubah file lain.
 class SecurityUtils {
-  // --- PBKDF2 Hashing Function ---
-  // Algoritma hashing yang aman untuk password
-
-  /// Membuat string salt acak dengan panjang 16 byte.
+  /// Generate salt acak (default 16 karakter)
   static String generateSalt([int length = 16]) {
+    const chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final rand = Random.secure();
-    final List<int> salt = List.generate(length, (_) => rand.nextInt(256));
-    return base64Encode(salt);
+    return List.generate(length, (_) => chars[rand.nextInt(chars.length)]).join();
   }
 
-  /// Melakukan hashing PBKDF2 pada password.
-  /// Iterasi 100.000 adalah standar yang baik untuk PBKDF2.
+  /// Hash password dengan format: sha256("$salt:$password")
   static String hashPassword(String password, String salt) {
-    final saltBytes = base64Decode(salt);
-    final passwordBytes = utf8.encode(password);
-    
-    // Parameter PBKDF2
-    const int keyLength = 64; // Panjang kunci yang dihasilkan
-    const int iterations = 100000; // Jumlah iterasi (harus tinggi)
-
-    final key = pbkdf2.call(
-      passwordBytes, 
-      saltBytes, 
-      keyLength, 
-      iterations, 
-      sha256,
-    );
-    
-    return base64Encode(key);
+    final bytes = utf8.encode('$salt:$password');
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 
-  /// Verifikasi password dengan membandingkan hash baru dengan hash yang tersimpan.
-  static bool verifyPassword(String password, String storedHash, String storedSalt) {
-    final newHash = hashPassword(password, storedSalt);
-    return newHash == storedHash;
+  /// Verifikasi password input terhadap hash tersimpan
+  static bool verifyPassword(String inputPassword, String salt, String storedHash) {
+    return hashPassword(inputPassword, salt) == storedHash;
   }
 }
