@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "nama": "Gudeg Yu Djum Wijilan",
+    "alamat": "Jl. Wijilan No.31, Panembahan, Kraton, Kota Yogyakarta",
+    "latitude": -7.8016,
+    "longitude": 110.3700,
+    "kisaranHarga": "Rp 25.000 – 60.000",
+    "rating": 4.6,
+    "jamBuka": "06:00",
+    "jamTutup": "18:00",
+    "urlMaps": "https://maps.app.goo.gl/9zEw4q43r6e4yS1j8"
+  },
+  {
+    "id": 2,
+    "nama": "Angkringan Kopi Joss Tugu",
+    "alamat": "Jl. Margo Utomo No.21, Prawirodirjan, Gondomanan, Kota Yogyakarta",
+    "latitude": -7.7850,
+    "longitude": 110.3664,
+    "kisaranHarga": "Rp 5.000 – 15.000",
+    "rating": 4.3,
+    "jamBuka": "18:00",
+    "jamTutup": "02:00",
+    "urlMaps": "https://maps.app.goo.gl/K6V8M7C4Gj2oH8x8A"
+  },
+  {
+    "id": 3,
+    "nama": "Sate Klathak Pak Pong",
+    "alamat": "Jl. Imogiri Tim. No.12, Karangturi, Pleret, Bantul",
+    "latitude": -7.8682,
+    "longitude": 110.3957,
+    "kisaranHarga": "Rp 35.000 – 70.000",
+    "rating": 4.5,
+    "jamBuka": "09:00",
+    "jamTutup": "23:00",
+    "urlMaps": "https://maps.app.goo.gl/2T7hWwX8F9hKj7V67"
+  },
+  {
+    "id": 4,
+    "nama": "Warung Makan Bu Kom",
+    "alamat": "Jl. Kaliurang KM. 5,2, Kembarsari, Caturtunggal, Sleman",
+    "latitude": -7.7560,
+    "longitude": 110.3790,
+    "kisaranHarga": "Rp 15.000 – 30.000",
+    "rating": 4.1,
+    "jamBuka": "11:00",
+    "jamTutup": "21:00",
+    "urlMaps": "https://maps.app.goo.gl/yJ6W3H5Z8A4Xp2P46"
+  },
+  {
+    "id": 5,
+    "nama": "Bakmi Jawa Mbah Gito",
+    "alamat": "Jl. Nyi Ageng Nis No.9, Rejowinangun, Kotagede, Kota Yogyakarta",
+    "latitude": -7.8075,
+    "longitude": 110.4005,
+    "kisaranHarga": "Rp 20.000 – 40.000",
+    "rating": 4.7,
+    "jamBuka": "17:00",
+    "jamTutup": "24:00",
+    "urlMaps": "https://maps.app.goo.gl/9R6qV4YwZ8fT3xS7A"
+  }
+]

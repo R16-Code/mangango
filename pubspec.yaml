@@ -1,0 +1,51 @@
+name: mangan_go
+description: Aplikasi pencarian tempat makan di Jogja dengan fokus setState dan Hive.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management & Data Core
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.3
+
+  # Session Management
+  shared_preferences: ^2.2.3
+
+  # Location & Geometry
+  geolocator: ^12.0.0
+  haversine_distance: ^1.2.0
+
+  # Network & Security
+  http: ^1.2.1
+  # Menggunakan package 'crypto' untuk PBKDF2 hashing yang standar
+  crypto: ^3.0.3 
+
+  # Notifications & Timezone
+  flutter_local_notifications: ^17.1.2
+  flutter_timezone: ^1.0.8
+
+  # Deep Linking / Launching URLs
+  url_launcher: ^6.3.0
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.9
+
+# Pastikan Anda sudah membuat folder 'assets/data'
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/seed_places.json
