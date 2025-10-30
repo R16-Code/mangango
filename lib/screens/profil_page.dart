@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:mangan_go/models/pengguna.dart';
 import 'package:mangan_go/router.dart';
 import 'package:mangan_go/services/session_service.dart';
+import 'package:mangan_go/services/notif_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,7 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _loading = true;
 
   // State pengingat makan (default)
-  TimeOfDay? _pagi = const TimeOfDay(hour: 7, minute: 0);
+  TimeOfDay? _pagi  = const TimeOfDay(hour: 7,  minute: 0);
   TimeOfDay? _siang = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay? _malam = const TimeOfDay(hour: 19, minute: 0);
 
@@ -36,7 +37,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return '$hh:$mm';
   }
 
-  // parse "HH:mm" → TimeOfDay?
   TimeOfDay? _parseHHmm(String? s) {
     if (s == null || s.isEmpty) return null;
     final parts = s.split(':');
@@ -63,15 +63,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ---------- Load & Save ----------
   Future<void> _load() async {
-    // ambil userId dari session (String?)
     final userId = await _session.getLoggedInUserId();
-
     if (userId != null) {
       final boxUsers = Hive.box<Pengguna>('users');
-      _user = boxUsers.get(userId); // key String sesuai Pengguna.id
+      _user = boxUsers.get(userId); // key = Pengguna.id (String)
     }
 
-    // Baca reminderTimes dari user (format ['HH:MM','HH:MM','HH:MM'])
     final times = _user?.reminderTimes ?? const ['07:00', '12:00', '19:00'];
     String? _safeGet(List<String> l, int i) => (i >= 0 && i < l.length) ? l[i] : null;
 
@@ -91,18 +88,24 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    // Simpan format 'HH:mm' ke list di model Pengguna
-    _user!.reminderTimes = [
-      _fmt(_pagi),  // contoh: '07:00'
-      _fmt(_siang), // '12:00'
-      _fmt(_malam), // '19:00'
-    ];
+    // simpan 'HH:mm' ke Hive
+    _user!.reminderTimes = [_fmt(_pagi), _fmt(_siang), _fmt(_malam)];
+    await _user!.save();
 
-    await _user!.save(); // persist ke Hive
+    // jadwalkan ulang notifikasi harian
+    await NotifService().requestPermission();
+    await NotifService().rescheduleReminders(
+      userId: _user!.id,
+      times: _user!.reminderTimes,
+    );
+
+    // opsional: tes 60 detik + notifikasi instan
+    // await NotifService().debugScheduleInSeconds(60);
+    await NotifService().showSimple('Tes Notifikasi', 'Notifikasi berhasil muncul 🎉');
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pengingat makan disimpan.')),
+      const SnackBar(content: Text('Pengingat makan disimpan & notifikasi dijadwalkan.')),
     );
   }
 
@@ -114,18 +117,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    // ======= APP BAR SAMA seperti SaranKesanPage =======
+    final appBar = AppBar(
+      backgroundColor: const Color(0xFF2A2A2A),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      title: const Text(
+        'Profil',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+      actions: [
+        Container(
+          margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+          child: ElevatedButton.icon(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+          ),
+        ),
+      ],
+    );
+
     if (_loading) {
       return Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF2A2A2A),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          title: const Text(
-            'Profil',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
+        appBar: appBar,
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
@@ -135,7 +157,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           child: const Center(child: CircularProgressIndicator(color: Colors.white)),
         ),
-        bottomNavigationBar: _buildBottomNav(),
+        bottomNavigationBar: _bottomNav(context),
       );
     }
 
@@ -143,37 +165,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2A2A2A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          'Profil',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            child: ElevatedButton.icon(
-              onPressed: _logout,
-              icon: const Icon(Icons.logout, size: 18),
-              label: const Text(
-                'Logout',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-
+      appBar: appBar,
       body: Container(
         decoration: const BoxDecoration(
           image: DecorationImage(
@@ -183,9 +175,16 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 32),
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+  child: ConstrainedBox(
+    constraints: BoxConstraints(
+      minHeight: MediaQuery.of(context).size.height,
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+
+                const SizedBox(height: 8),
 
                 // Avatar
                 Container(
@@ -196,9 +195,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
@@ -215,8 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Username
                 Text(
@@ -227,17 +225,23 @@ class _ProfilePageState extends State<ProfilePage> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 24),
 
-                const SizedBox(height: 32),
-
-                // Card Pengingat Makan
+                // ===== Card Pengingat (gaya sama seperti SaranKesan _buildSectionCard) =====
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2A2A2A).withOpacity(0.90),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,9 +249,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       const Text(
                         'Pengingat Makan',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -281,9 +285,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
-                      // Tombol Simpan
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -299,10 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                           child: const Text(
                             'Simpan',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -310,18 +310,38 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // Tombol tes notifikasi
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await NotifService().requestPermission();
+                      await NotifService().showSimple('Tes Notifikasi', 'Halo dari Mangan Go! 🎉');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Notifikasi tes dikirim.')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.notifications_active),
+                    label: const Text('Tes Notif Sekarang'),
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
-
-      bottomNavigationBar: _buildBottomNav(),
+      ),
+      // ===== Bottom nav disamakan dengan SaranKesanPage =====
+      bottomNavigationBar: _bottomNav(context),
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _bottomNav(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: 1,
       backgroundColor: const Color(0xFF2A2A2A),
@@ -338,18 +358,9 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       },
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Beranda',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble),
-          label: 'Feedback',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Feedback'),
       ],
     );
   }
@@ -375,10 +386,7 @@ class _ReminderRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
           Row(
             children: [

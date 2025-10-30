@@ -10,6 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  android_intent_plus: ^5.0.2
+  package_info_plus: ^8.0.2
 
   # Data & storage
   hive: ^2.2.3
@@ -29,7 +31,6 @@ dependencies:
 
   # Notifikasi & timezone
   flutter_local_notifications: ^17.2.3
-  flutter_timezone: ^2.0.0
   timezone: ^0.9.3
 
 dev_dependencies:

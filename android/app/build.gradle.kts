@@ -11,8 +11,12 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Java 11 sudah cukup untuk flutter_local_notifications
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+
+        // ⬅️ WAJIB untuk mengatasi error: requires core library desugaring
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -20,10 +24,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.mangango"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // ⬅️ Pastikan minimal 21
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -41,4 +43,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// ⬅️ Tambahkan blok dependencies ini (kalau belum ada)
+dependencies {
+    // Wajib untuk core library desugaring (pilih salah satu versi stabil)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

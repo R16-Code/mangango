@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mangan_go/services/notif_service.dart';
 
 import 'app.dart';
 import 'models/pengguna.dart';
@@ -30,5 +31,7 @@ Future<void> _initHiveAndSeed() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _initHiveAndSeed();
+  await NotifService().initialize(); // ⬅️ Harus sebelum runApp
   runApp(const App());
 }
+
