@@ -7,16 +7,71 @@ class SaranKesanPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF2A2A2A),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Feedback',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/main_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                _buildSectionCard(
+                  title: 'Kesan Pengembang',
+                  content:
+                      'Kami bangga telah menyelesaikan "Mangan Go" dengan pendekatan yang sederhana dan efisien. '
+                      'Fokus pada pemisahan logika ke Service dan penggunaan Hive sebagai database lokal membuat proyek ini mudah dipahami oleh pemula Flutter. '
+                      'Ini membuktikan bahwa fitur kompleks seperti LBS, hashing, dan konversi mata uang bisa diimplementasikan tanpa arsitektur berlebihan. '
+                      'Kesederhanaan adalah kunci untuk presentasi yang jelas dan efektif!',
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'Saran untuk Pengembangan Lanjut',
+                  content:
+                      'Untuk pengembangan ke depan, disarankan untuk:\n\n'
+                      '1. Integrasi dengan API Maps sungguhan untuk tampilan peta yang lebih baik.\n'
+                      '2. Menggunakan state management seperti Provider/Riverpod untuk skala aplikasi lebih besar.\n'
+                      '3. Implementasi fitur Favorite dengan penyimpanan di Hive.',
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'Catatan',
+                  content:
+                      'Aplikasi ini dibangun menggunakan Flutter dan hanya mengandalkan setState() untuk manajemen status.',
+                  italic: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2, // Saran & Kesan = tab ke-3
-        selectedItemColor: Colors.teal,
+        currentIndex: 2,
+        backgroundColor: const Color(0xFF2A2A2A),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white38,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           if (index == 0) {
             Navigator.pushReplacementNamed(context, AppRouter.home);
           } else if (index == 1) {
             Navigator.pushReplacementNamed(context, AppRouter.profile);
           } else if (index == 2) {
-            // sudah di Saran & Kesan, abaikan
+            // sudah di Feedback
           }
         },
         items: const [
@@ -26,69 +81,64 @@ class SaranKesanPage extends StatelessWidget {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profil',
+            label: 'Profile',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.lightbulb),
-            label: 'Saran & Kesan',
+            icon: Icon(Icons.chat_bubble),
+            label: 'Feedback',
           ),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Tab Saran & Kesan (Display Only)',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal),
-            ),
-            const Divider(),
-            const SizedBox(height: 10),
-            
-            _buildSection(
-              title: 'Kesan Pengembang',
-              content: 
-                'Kami bangga telah menyelesaikan "Mangan Go" dengan pendekatan yang sederhana dan efisien. Fokus pada pemisahan logika ke Service dan penggunaan Hive sebagai database lokal membuat proyek ini sangat mudah dipahami oleh pemula Flutter. Ini membuktikan bahwa fitur kompleks seperti LBS, Hashing, dan Konversi Mata Uang bisa diimplementasikan tanpa arsitektur yang berlebihan. Kesederhanaan adalah kunci untuk presentasi yang jelas dan efektif!',
-            ),
-
-            const SizedBox(height: 20),
-
-            _buildSection(
-              title: 'Saran untuk Pengembangan Lanjut',
-              content: 
-                'Untuk pengembangan ke depan, disarankan untuk: \n'
-                '1. Integrasi dengan API Maps sungguhan untuk tampilan peta yang lebih baik. \n'
-                '2. Menggunakan State Management seperti Provider atau Riverpod untuk skala aplikasi yang lebih besar. \n'
-                '3. Implementasi fitur "Favorite" dengan penyimpanan di Hive.',
-            ),
-
-            const SizedBox(height: 20),
-            Text(
-              'Aplikasi ini dibangun menggunakan Flutter dan hanya mengandalkan setState() untuk manajemen status.',
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey[600]),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildSection({required String title, required String content}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          content,
-          textAlign: TextAlign.justify,
-          style: TextStyle(fontSize: 16, height: 1.5, color: Colors.grey[800]),
-        ),
-      ],
+  // ===== Helper private untuk membuat card section agar konsisten dan rapih =====
+  Widget _buildSectionCard({
+    required String title,
+    required String content,
+    bool italic = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2A2A).withOpacity(0.90),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Judul
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Isi
+          Text(
+            content,
+            textAlign: TextAlign.justify,
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.6,
+              color: Colors.white,
+              fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mangan_go/models/tempat.dart';
+import 'package:mangan_go/router.dart';
 import 'package:mangan_go/utils/maps_launcher.dart';
 import 'package:mangan_go/services/currency_service.dart';
 
@@ -13,7 +14,6 @@ class DetailTempatPage extends StatefulWidget {
 
 class _DetailTempatPageState extends State<DetailTempatPage> {
   final CurrencyService _currency = CurrencyService();
-
   Map<String, double>? _rates; // {'USD': x, 'EUR': y, 'JPY': z}
   bool _loadingRates = true;
 
@@ -35,12 +35,10 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   // =======================
   // ====== UTIL TIME ======
   // =======================
-
   DateTime _parseWibToday(String hhmm) {
     final parts = hhmm.split(':');
     final h = int.tryParse(parts.elementAt(0)) ?? 0;
     final m = int.tryParse(parts.elementAt(1)) ?? 0;
-
     final nowLocal = DateTime.now();
     // WIB = UTC+7 → representasikan sebagai UTC (jam WIB - 7)
     final baseUtc = DateTime.utc(nowLocal.year, nowLocal.month, nowLocal.day, 0, 0);
@@ -87,7 +85,6 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   // ==========================
   // ====== UTIL CURRENCY =====
   // ==========================
-
   // Parse "Rp20.000 - Rp50.000" / "20000-50000" / "Rp 25.000 s/d 60.000"
   (int? minIdr, int? maxIdr) _parseIdrRange(String text) {
     final digits = RegExp(r'(\d+)');
@@ -131,7 +128,6 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   // ======================
   // ====== MAP OPEN  =====
   // ======================
-
   bool _looksLikeBrokenShortLink(String url) {
     final u = url.toLowerCase();
     return u.contains('maps.app.goo.gl') || u.contains('goo.gl/maps');
@@ -146,38 +142,10 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     }
   }
 
-  // ======================
-  // ====== UI HELPERS ====
-  // ======================
-
-  Widget _rowInfo({required IconData icon, required String label, required String value}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.teal),
-          const SizedBox(width: 10),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(color: Colors.black87, fontSize: 15),
-                children: [
-                  TextSpan(text: '$label\n', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  TextSpan(text: value),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = widget.tempat;
-
+    
     // ===== Waktu operasional =====
     final (bLondon, bLabel) = _fromWIBtoLondon(t.jamBuka);
     final (tLondon, tLabel) = _fromWIBtoLondon(t.jamTutup);
@@ -190,65 +158,254 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     final (minIdr, maxIdr) = _parseIdrRange(t.kisaranHarga);
     final idrText = t.kisaranHarga.isNotEmpty ? t.kisaranHarga : 'Tidak diketahui';
 
-    String hargaForeignBlock() {
-      if (_loadingRates || _rates == null) {
-        return 'Memuat kurs...';
-      }
-      final rates = _rates!;
-      final usd = _toForeignRange(minIdr, maxIdr, rates, 'USD', symbol: '\$', fraction: 2);
-      final eur = _toForeignRange(minIdr, maxIdr, rates, 'EUR', symbol: '€', fraction: 2);
-      final jpy = _toForeignRange(minIdr, maxIdr, rates, 'JPY', symbol: '¥', fraction: 0);
-      return 'USD: $usd\nEUR: $eur\nJPY: $jpy';
-    }
-
     return Scaffold(
+      backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
-        title: const Text('Detail Tempat'),
-        backgroundColor: Colors.teal,
+        
+        backgroundColor: const Color(0xFF2A2A2A),
         foregroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Detail Tempat',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(t.nama, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Row(
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/main_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
             children: [
-              const Icon(Icons.star, color: Colors.amber, size: 18),
-              const SizedBox(width: 4),
-              Text('${t.rating}'),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2A2A),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    t.nama,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.star, color: Color(0xFFFFEB3B), size: 20),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${t.rating}',
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFEB3B),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              t.alamat,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // ===== Kisaran Harga =====
+                            _buildInfoSection(
+                              icon: Icons.payments_outlined,
+                              title: 'Kisaran Harga',
+                              children: [
+                                _buildInfoRow('Rp', idrText),
+                                if (_loadingRates)
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      'Memuat kurs...',
+                                      style: TextStyle(color: Colors.white54, fontSize: 13),
+                                    ),
+                                  )
+                                else if (_rates != null) ...[
+                                  _buildInfoRow('USD', _toForeignRange(minIdr, maxIdr, _rates!, 'USD', symbol: '\$', fraction: 2)),
+                                  _buildInfoRow('EUR', _toForeignRange(minIdr, maxIdr, _rates!, 'EUR', symbol: '€', fraction: 2)),
+                                  _buildInfoRow('JPY', _toForeignRange(minIdr, maxIdr, _rates!, 'JPY', symbol: '¥', fraction: 0)),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // ===== Jam Operasional =====
+                            _buildInfoSection(
+                              icon: Icons.access_time_outlined,
+                              title: 'Jam Operasional',
+                              children: [
+                                _buildInfoRow('WIB', '${t.jamBuka} - ${t.jamTutup}'),
+                                _buildInfoRow('WITA', '$bukaWITA - $tutupWITA'),
+                                _buildInfoRow('WIT', '$bukaWIT - $tutupWIT'),
+                                _buildInfoRow('London', '$bLondon - $tLondon ($bLabel)'),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ===== Tombol Buka di Maps =====
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A2A2A),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openMaps(t),
+                      icon: const Icon(Icons.location_on, size: 24),
+                      label: const Text(
+                        'Buka di Maps',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          _rowInfo(icon: Icons.location_on, label: 'Alamat', value: t.alamat),
-
-          // Harga + konversi
-          _rowInfo(
-            icon: Icons.attach_money,
-            label: 'Kisaran Harga',
-            value: '$idrText\n${hargaForeignBlock()}',
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        backgroundColor: const Color(0xFF2A2A2A),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white38,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushReplacementNamed(context, AppRouter.home);
+          } else if (index == 1) {
+            Navigator.pushReplacementNamed(context, AppRouter.profile);
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, AppRouter.feedback);
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Beranda',
           ),
-
-          // Waktu operasional
-          _rowInfo(
-            icon: Icons.access_time,
-            label: 'Jam Operasional',
-            value: 'WIB : ${t.jamBuka}–${t.jamTutup}'
-                '\nWITA: $bukaWITA–$tutupWITA'
-                '\nWIT : $bukaWIT–$tutupWIT'
-                '\nLondon ($bLabel): $bLondon–$tLondon',
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble),
+            label: 'Feedback',
+          ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () => _openMaps(t),
-            icon: const Icon(Icons.map),
-            label: const Text('Buka di Maps'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+  Widget _buildInfoSection({
+    required IconData icon,
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 60,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
             ),
           ),
         ],

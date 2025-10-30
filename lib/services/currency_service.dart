@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:mangan_go/models/cache_kurs.dart';
 
 class CurrencyService {
-  static const String _apiKey = 'GANTI_DENGAN_API_KEY_ANDA'; // opsional
+  static const String _apiKey = 'GANTI_DENGAN_API_KEY_ANDA';
   static const String _apiUrl = 'https://v6.exchangerate-api.com/v6/$_apiKey/latest/IDR';
   static const String _boxName = 'cache'; // pakai box 'cache' (CacheKurs)
 
