@@ -42,22 +42,18 @@ class _SplashGateState extends State<SplashGate> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.teal,
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.restaurant_menu, size: 90, color: Colors.white),
-            SizedBox(height: 16),
-            Text(
-              'Mangan Go',
-              style: TextStyle(
-                fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white,
+              Image.asset(
+                'assets/images/Logo.png',
+                height: 200,
               ),
-            ),
-            SizedBox(height: 8),
-            CircularProgressIndicator(
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ],

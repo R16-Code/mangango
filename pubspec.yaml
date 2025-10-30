@@ -44,3 +44,5 @@ flutter:
   assets:
     - assets/data/seed_places.json
     - assets/images/profile_default.jpeg
+    - assets/images/bg.jpeg
+    - assets/images/Logo.png
