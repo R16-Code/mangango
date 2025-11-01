@@ -150,10 +150,18 @@ class _HomePageState extends State<HomePage> {
       ),
     ),
     child: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
+      top: false,
+      child: Column(
+        children: [
+          // Header Section
+          Container(
+            // ganti padding: tambahkan status bar height supaya konten tidak ketutup
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.of(context).padding.top + 20, // ⟵ ini kuncinya
+              20,
+              20,
+            ),
               decoration: const BoxDecoration(
                 color: Color(0xFF2A2A2A),
                 borderRadius: BorderRadius.only(

@@ -23,9 +23,7 @@ Future<void> _initHiveAndSeed() async {
   await Hive.openBox('settings');
 
   final tempatService = TempatService();
-  if (!await tempatService.hasSeeded()) {
-    await tempatService.seedPlacesFromJson();
-  }
+  await tempatService.reseedIfJsonChanged();
 }
 
 void main() async {

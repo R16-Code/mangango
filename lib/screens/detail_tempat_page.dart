@@ -128,19 +128,16 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   // ======================
   // ====== MAP OPEN  =====
   // ======================
-  bool _looksLikeBrokenShortLink(String url) {
-    final u = url.toLowerCase();
-    return u.contains('maps.app.goo.gl') || u.contains('goo.gl/maps');
-    // kedua domain itu sering 404 Dynamic Link jika tidak valid
-  }
 
-  void _openMaps(Tempat t) {
-    if (t.urlMaps.isNotEmpty && !_looksLikeBrokenShortLink(t.urlMaps)) {
-      MapsLauncher.openUrl(t.urlMaps);
-    } else {
-      MapsLauncher.openMap(t.latitude, t.longitude, label: t.nama);
-    }
-  }
+void _openMaps(Tempat t) {
+  MapsLauncher.openSmart(
+    t.urlMaps.trim(),
+    lat: t.latitude,
+    lng: t.longitude,
+    label: t.nama,
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
