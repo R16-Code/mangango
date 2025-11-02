@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mangango/models/tempat.dart';
 import 'package:mangango/router.dart';
+import 'package:mangango/services/session_service.dart';
 import 'package:mangango/utils/haversine.dart';
 import 'package:mangango/utils/maps_launcher.dart';
 import 'package:mangango/services/currency_service.dart';
@@ -20,6 +21,7 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   final CurrencyService _currency = CurrencyService();
   final LokasiService _lokasiService = LokasiService(); // ⟵ TAMBAH
   final EtaService _etaService = EtaService(); // ⟵ TAMBAH
+  final SessionService _session = SessionService();
   
   Map<String, double>? _rates;
   bool _loadingRates = true;
@@ -34,9 +36,20 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   @override
   void initState() {
     super.initState();
+    _checkSession();
     _loadRates();
     _initEta(); // ⟵ TAMBAH: Initialize ETA system
   }
+
+  Future<void> _checkSession() async {
+  final userId = await _session.getLoggedInUserId();
+  if (userId == null) {
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, AppRouter.login);
+    }
+    return;
+  }
+}
 
   // ⟵ TAMBAH: Method untuk ETA system
   Future<void> _initEta() async {

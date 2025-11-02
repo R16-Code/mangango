@@ -2,29 +2,43 @@ import 'package:hive/hive.dart';
 
 class SessionService {
   static const String _boxName = 'session';
-  static const String _keyLoggedUserId = 'loggedUserId';
+  static const String _keyUserId = 'userId';
+  static const String _keyLoginTime = 'loginTime';
+  static const Duration sessionDuration = Duration(hours: 1); // ⬅️ 1 JAM
 
-  Future<Box> _box() async {
-    if (!Hive.isBoxOpen(_boxName)) {
-      await Hive.openBox(_boxName);
-    }
-    return Hive.box(_boxName);
+  Future<Box<dynamic>> _getSessionBox() async {
+    return await Hive.openBox<dynamic>(_boxName);
   }
 
   Future<void> setLoggedIn({required String userId}) async {
-    final box = await _box();
-    await box.put(_keyLoggedUserId, userId);
+    final box = await _getSessionBox();
+    await box.putAll({
+      _keyUserId: userId,
+      _keyLoginTime: DateTime.now().toIso8601String(), // ⬅️ TAMBAH INI
+    });
   }
 
   Future<String?> getLoggedInUserId() async {
-    final box = await _box();
-    final v = box.get(_keyLoggedUserId);
-    if (v is String && v.isNotEmpty) return v;
-    return null;
+    final box = await _getSessionBox();
+    final userId = box.get(_keyUserId);
+    final loginTimeStr = box.get(_keyLoginTime);
+    
+    // CEK: Data session ada?
+    if (userId == null || loginTimeStr == null) return null;
+    
+    // CEK: Session expired?
+    final loginTime = DateTime.parse(loginTimeStr);
+    final now = DateTime.now();
+    if (now.difference(loginTime) > sessionDuration) {
+      await logout(); // ⬅️ AUTO LOGOUT JIKA LEWAT 1 JAM
+      return null;
+    }
+    
+    return userId as String;
   }
 
   Future<void> logout() async {
-    final box = await _box();
-    await box.delete(_keyLoggedUserId);
+    final box = await _getSessionBox();
+    await box.clear(); // ⬅️ HAPUS SEMUA DATA SESSION
   }
 }

@@ -40,16 +40,16 @@ class SaranKesanPage extends StatelessWidget {
                 _buildSectionCard(
                   title: 'Kesan',
                   content:
-                      'Secara keseluruhan, mata kuliah ini sangat menarik dan menantang. Karena Flutter adalah hal yang benar-benar baru bagi saya, rasanya cukup memuaskan bisa belajar dari nol hingga akhirnya memahami dasar-dasar pembuatan aplikasi mobile.'
-                      'Saya sangat mengapresiasi proyek akhir yang membuat kami bisa langsung mempraktikkan teori menjadi sebuah aplikasi nyata. Ilmu yang dipelajari terasa sangat relevan dan berguna.'
-                      'Namun, sebagai pemula, saya sedikit kewalahan dengan kecepatan perkuliahan. Banyak konsep penting dalam Flutter (seperti manajemen state) yang penjelasannya terasa singkat, sehingga akhirnya kami harus banyak belajar mandiri untuk bisa memahami dan menyelesaikan tugas. Selain itu, tenggat waktu untuk tugas akhir terasa sangat singkat, apalagi bagi yang masih benar-benar baru seperti saya.'
+                      'Secara keseluruhan, mata kuliah ini sangat menarik dan menantang. Karena Flutter adalah hal yang benar-benar baru bagi saya, rasanya cukup memuaskan bisa belajar dari nol hingga akhirnya memahami dasar-dasar pembuatan aplikasi mobile.\n\n'
+                      'Saya sangat mengapresiasi proyek akhir yang membuat kami bisa langsung mempraktikkan teori menjadi sebuah aplikasi nyata. Ilmu yang dipelajari terasa sangat relevan dan berguna.\n\n'
+                      'Namun, sebagai pemula, saya sedikit kewalahan dengan kecepatan perkuliahan. Banyak konsep penting dalam Flutter (seperti manajemen state) yang penjelasannya terasa singkat, sehingga akhirnya kami harus banyak belajar mandiri untuk bisa memahami dan menyelesaikan tugas. Selain itu, tenggat waktu untuk tugas akhir terasa sangat singkat, apalagi bagi yang masih benar-benar baru seperti saya.\n\n'
                       'Kesederhanaan adalah kunci untuk presentasi yang jelas dan efektif!',
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Saran',
                   content:
-                      'Saran saya, mungkin untuk angkatan berikutnya, bisa dipertimbangkan untuk menambahkan sesi khusus membahas konsep-konsep inti Flutter lebih dalam atau memberikan tenggat waktu yang lebih longgar untuk proyek akhir, agar kualitas hasil belajar dan aplikasi yang dibuat bisa lebih optimal.'
+                      'Saran saya, mungkin untuk angkatan berikutnya, bisa dipertimbangkan untuk menambahkan sesi khusus membahas konsep-konsep inti Flutter lebih dalam atau memberikan tenggat waktu yang lebih longgar untuk proyek akhir, agar kualitas hasil belajar dan aplikasi yang dibuat bisa lebih optimal.\n\n'
                       'Terima kasih atas pengalaman belajarnya yang sangan memuaskan!😀',
                 ),
               ],

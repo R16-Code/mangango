@@ -45,10 +45,22 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _checkSession(); 
     _loadUsername();          // ⟵ tetap
     _initLoadPlaces();
   }
 
+  Future<void> _checkSession() async {
+    final userId = await _session.getLoggedInUserId();
+    if (userId == null) {
+      // SESSION EXPIRED, REDIRECT KE LOGIN
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRouter.login);
+      }
+      return;
+    }
+  }
+  
   Future<void> _loadUsername() async {
     // ⟵ SERAGAM DENGAN ProfilePage
     final userId = await _session.getLoggedInUserId();

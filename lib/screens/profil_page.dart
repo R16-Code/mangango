@@ -26,9 +26,10 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    _checkSession();
     _load();
   }
-
+  
   // ---------- Helpers waktu ----------
   String _fmt(TimeOfDay? t) {
     if (t == null) return '-';
@@ -46,6 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (h == null || m == null) return null;
     return TimeOfDay(hour: h, minute: m);
   }
+
 
   Future<void> _pickTime({
     required TimeOfDay? current,
@@ -113,6 +115,16 @@ class _ProfilePageState extends State<ProfilePage> {
     await _session.logout();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, AppRouter.login);
+  }
+
+  Future<void> _checkSession() async {
+    final userId = await _session.getLoggedInUserId();
+    if (userId == null) {
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, AppRouter.login);
+      }
+      return;
+    }
   }
 
   @override
@@ -311,25 +323,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
 
                 const SizedBox(height: 16),
-
-                // Tombol tes notifikasi
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await NotifService().requestPermission();
-                      await NotifService().showSimple('Tes Notifikasi', 'Halo dari Mangan Go! 🎉');
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Notifikasi tes dikirim.')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.notifications_active),
-                    label: const Text('Tes Notif Sekarang'),
-                  ),
-                ),
               ],
             ),
           ),
