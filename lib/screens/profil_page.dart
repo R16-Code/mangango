@@ -18,7 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Pengguna? _user;
   bool _loading = true;
 
-  // State pengingat makan (default)
+  // Pengingat makan (default)
   TimeOfDay? _pagi  = const TimeOfDay(hour: 7,  minute: 0);
   TimeOfDay? _siang = const TimeOfDay(hour: 12, minute: 0);
   TimeOfDay? _malam = const TimeOfDay(hour: 19, minute: 0);
@@ -30,7 +30,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _load();
   }
   
-  // ---------- Helpers waktu ----------
+  //
   String _fmt(TimeOfDay? t) {
     if (t == null) return '-';
     final hh = t.hour.toString().padLeft(2, '0');
@@ -63,12 +63,12 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // ---------- Load & Save ----------
+  // Load dan save profil
   Future<void> _load() async {
     final userId = await _session.getLoggedInUserId();
     if (userId != null) {
       final boxUsers = Hive.box<Pengguna>('users');
-      _user = boxUsers.get(userId); // key = Pengguna.id (String)
+      _user = boxUsers.get(userId); // key = id pengguna
     }
 
     final times = _user?.reminderTimes ?? const ['07:00', '12:00', '19:00'];
@@ -90,19 +90,17 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    // simpan 'HH:mm' ke Hive
+    // simpan ke hive
     _user!.reminderTimes = [_fmt(_pagi), _fmt(_siang), _fmt(_malam)];
     await _user!.save();
 
-    // jadwalkan ulang notifikasi harian
+    // jadwalkan ulang
     await NotifService().requestPermission();
     await NotifService().rescheduleReminders(
       userId: _user!.id,
       times: _user!.reminderTimes,
     );
 
-    // opsional: tes 60 detik + notifikasi instan
-    // await NotifService().debugScheduleInSeconds(60);
     await NotifService().showSimple('Tes Notifikasi', 'Notifikasi berhasil muncul 🎉');
 
     if (!mounted) return;
@@ -129,7 +127,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // ======= APP BAR SAMA seperti SaranKesanPage =======
     final appBar = AppBar(
       backgroundColor: const Color(0xFF2A2A2A),
       foregroundColor: Colors.white,
@@ -195,10 +192,8 @@ class _ProfilePageState extends State<ProfilePage> {
     child: Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-
                 const SizedBox(height: 8),
-
-                // Avatar
+                // Foto profil
                 Container(
                   width: 120,
                   height: 120,
@@ -239,7 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 const SizedBox(height: 24),
 
-                // ===== Card Pengingat (gaya sama seperti SaranKesan _buildSectionCard) =====
+                // Card Pengingat
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -329,7 +324,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       ),
-      // ===== Bottom nav disamakan dengan SaranKesanPage =====
       bottomNavigationBar: _bottomNav(context),
     );
   }

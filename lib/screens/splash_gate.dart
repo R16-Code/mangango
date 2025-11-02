@@ -15,16 +15,15 @@ class _SplashGateState extends State<SplashGate> {
   @override
   void initState() {
     super.initState();
-    // Pastikan dieksekusi setelah frame pertama ter-build
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkLogin());
   }
 
   Future<void> _checkLogin() async {
     try {
-      // Efek splash singkat
+      // Efek splash
       await Future.delayed(const Duration(seconds: 2));
 
-      final userId = await _session.getLoggedInUserId(); // aman: auto-open box
+      final userId = await _session.getLoggedInUserId();
       if (!mounted) return;
 
       final loggedIn = userId != null;
@@ -34,7 +33,6 @@ class _SplashGateState extends State<SplashGate> {
         Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.login, (_) => false);
       }
     } catch (_) {
-      // Hard fallback: kalau ada error apa pun, arahkan ke login
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.login, (_) => false);
     }

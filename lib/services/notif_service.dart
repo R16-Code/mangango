@@ -2,13 +2,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 
-/// Layanan notifikasi dengan:
-/// - initialize()  : inisialisasi + timezones
-/// - requestPermission(): minta izin (Android 13+/iOS)
-/// - showSimple()  : notifikasi instan
-/// - scheduleDaily(): jadwal harian (berulang)
-/// - rescheduleReminders(): cancel lama + buat jadwal baru dari 3 jam
-/// - cancelAllNotifications(): matikan semua
 class NotifService {
   NotifService._();
   static final NotifService _i = NotifService._();
@@ -22,7 +15,7 @@ class NotifService {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Init timezone agar schedule harian akurat
+    // Inisialisasi Timezone
     tzdata.initializeTimeZones();
     tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
@@ -46,7 +39,7 @@ class NotifService {
     _initialized = true;
   }
 
-  /// Minta izin notifikasi (Android 13+ & iOS).
+  /// Minta izin notifikasi
   Future<void> requestPermission() async {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
@@ -72,7 +65,7 @@ class NotifService {
   NotificationDetails _details() =>
       NotificationDetails(android: _androidDetails(), iOS: const DarwinNotificationDetails());
 
-  /// Notifikasi instan (tetap dipertahankan untuk kompatibilitas).
+  // Notifikasi instan
   Future<void> showSimple(String title, String body) async {
     await initialize();
     await flutterLocalNotificationsPlugin.show(
@@ -83,7 +76,7 @@ class NotifService {
     );
   }
 
-  /// Jadwal notifikasi HARIAN pada jam:menit lokal.
+  // Jadwal notifikasi harian
   Future<void> scheduleDaily({
     required int id,
     required int hour,
@@ -112,26 +105,23 @@ class NotifService {
     );
   }
 
-  /// Buat 3 ID stabil dari userId (String) + index (0..2), supaya mudah cancel.
+  // Logika buat id stabil ambil dari user id 
   List<int> _stableIds(String userId) {
-    // hash sederhana tapi stabil
+    // hash sederhana
     final base = userId.codeUnits.fold<int>(0, (a, b) => (a * 31 + b) & 0x7fffffff);
     return [base % 1000000, (base + 1) % 1000000, (base + 2) % 1000000];
-    // angka < 1.000.000 aman untuk ID
   }
 
-  /// Ulangi jadwal: batalkan 3 notifikasi lama lalu jadwalkan lagi berdasarkan 3 waktu.
-  /// times: daftar 3 string 'HH:mm' [pagi, siang, malam]
+  // Ulangi jadwal:
   Future<void> rescheduleReminders({
     required String userId,
-    required List<String> times, // ex: ['07:00','12:00','19:00']
+    required List<String> times,
   }) async {
     await initialize();
     await requestPermission();
 
     final ids = _stableIds(userId);
 
-    // cancel lama
     for (final id in ids) {
       await flutterLocalNotificationsPlugin.cancel(id);
     }
@@ -143,9 +133,9 @@ class NotifService {
     };
 
     String body(int idx) => switch (idx) {
-      0 => 'Waktunya sarapan supaya kuat berburu kuliner 🍜',
-      1 => 'Jangan lewatkan makan siangmu ✨',
-      _ => 'Isi tenaga lagi—malam ini makan apa? 🍽️',
+      0 => 'Waktunya sarapan Bos supaya kuat memulai hari 🍜',
+      1 => 'Jangan lewatkan makan siangmu Bos ✨',
+      _ => 'Untuk mengisi tenaga malam ini mau makan apa? 🍽️',
     };
 
     for (var i = 0; i < times.length && i < 3; i++) {

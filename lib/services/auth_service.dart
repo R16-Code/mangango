@@ -7,7 +7,7 @@ class AuthService {
   final SessionService _sessionService = SessionService();
   final Box<Pengguna> _userBox = Hive.box<Pengguna>('users');
 
-  /// Cari user by username (case-insensitive)
+  // Cari user by username
   Pengguna? getUserByUsername(String username) {
     final uname = username.trim().toLowerCase();
     for (final u in _userBox.values) {
@@ -16,8 +16,7 @@ class AuthService {
     return null;
   }
 
-  /// Register user baru
-  /// return `null` jika sukses; string pesan error jika gagal.
+  // Register
   Future<String?> register({
     required String username,
     required String password,
@@ -45,17 +44,15 @@ class AuthService {
       username: uname,
       hashedPassword: hash,
       salt: salt,
-      // reminderTimes default ada di model
     );
 
     await _userBox.put(id, user);
-    // Opsional: langsung login setelah register
+    // langsung login setelah register
     await _sessionService.setLoggedIn(userId: id);
     return null;
   }
 
-  /// Login
-  /// return `null` jika sukses; string pesan error jika gagal.
+  // Login
   Future<String?> login({
     required String username,
     required String password,
@@ -75,7 +72,7 @@ class AuthService {
     return null;
   }
 
-  /// Logout (hanya hapus session, tidak menghapus user)
+  // Logout hapus session
   Future<void> logout() async {
     await _sessionService.logout();
   }

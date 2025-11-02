@@ -1,22 +1,15 @@
-// lib/utils/maps_launcher.dart
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Util pembuka Google Maps / URL dengan fallback yang kuat.
-/// Urutan:
-/// 1) Coba URL yang disediakan (http/https) apa adanya
-/// 2) Fallback: intent geo: (khususnya Android, akurat ke koordinat)
-/// 3) Fallback: web (https Google Maps) pakai koordinat / query
 class MapsLauncher {
-  /// Entry point utama: coba buka [rawUrl] dulu; kalau gagal, pakai [lat],[lng] sebagai fallback.
   static Future<void> openSmart(
     String? rawUrl, {
     double? lat,
     double? lng,
     String? label,
   }) async {
-    // 1) Coba URL apa adanya dulu (kalau ada dan valid)
+    // Coba URL yang ada
     final trimmed = (rawUrl ?? '').trim();
     if (trimmed.isNotEmpty) {
       final uri = Uri.tryParse(trimmed);
@@ -24,18 +17,17 @@ class MapsLauncher {
         if (await _tryLaunch(uri, LaunchMode.externalApplication)) return;
         if (await _tryLaunch(uri, LaunchMode.platformDefault)) return;
         if (await _tryLaunch(uri, LaunchMode.inAppBrowserView)) return;
-        // kalau URL gagal, lanjut fallback koordinat/web
       }
     }
 
-    // 2) Fallback kuat: intent geo: (Android)
+    // Fallback intent geo (Android)
     if (lat != null && lng != null) {
       if (Platform.isAndroid) {
         final geo = _geoUri(lat, lng, label: label);
         if (await _tryLaunch(geo, LaunchMode.externalApplication)) return;
       }
 
-      // 3) Fallback web: https Google Maps pakai koordinat (pasti kebuka)
+      // Fallback maps menggunakan koordinat
       final web = _webMapsUri(lat: lat, lng: lng);
       if (await _tryLaunch(web, LaunchMode.externalApplication)) return;
       if (await _tryLaunch(web, LaunchMode.platformDefault)) return;
@@ -43,14 +35,15 @@ class MapsLauncher {
       return;
     }
 
-    // 4) Jika tidak ada URL dan tidak ada koordinat → buka beranda Google Maps
+    // Jika tidak ada URL dan tidak ada koordinat
+    // buka beranda Google Maps
     final webHome = _webMapsUri();
     if (await _tryLaunch(webHome, LaunchMode.externalApplication)) return;
     if (await _tryLaunch(webHome, LaunchMode.platformDefault)) return;
     await _tryLaunch(webHome, LaunchMode.inAppBrowserView);
   }
 
-  /// Buka URL apa pun secara eksplisit (kalau kamu ingin memaksa URL saja).
+  // Paksa buka URL apa pun
   static Future<void> openUrl(String url) async {
     final uri = Uri.parse(url);
     if (await _tryLaunch(uri, LaunchMode.externalApplication)) return;
@@ -58,12 +51,10 @@ class MapsLauncher {
     await _tryLaunch(uri, LaunchMode.inAppBrowserView);
   }
 
-  /// Buka koordinat saja (tanpa URL).
+  // Buka koordinat saja
   static Future<void> openMap(double latitude, double longitude, {String? label}) async {
     await openSmart(null, lat: latitude, lng: longitude, label: label);
   }
-
-  // ----------------- Helpers -----------------
 
   static Future<bool> _tryLaunch(Uri uri, LaunchMode mode) async {
     try {
@@ -80,7 +71,7 @@ class MapsLauncher {
     }
   }
 
-  // geo:-7.78,110.40?q=Warung%20Makan (Android akan arahkan ke app Maps)
+  // mengambil nama tempat, lat, long
   static Uri _geoUri(double lat, double lng, {String? label}) {
     final hasLabel = label != null && label.trim().isNotEmpty;
     final q = hasLabel ? Uri.encodeComponent(label.trim()) : null;
@@ -89,10 +80,6 @@ class MapsLauncher {
     return Uri.parse(geo);
   }
 
-  // Web fallback:
-  // - jika query diberikan → https://www.google.com/maps/search/?api=1&query=<query>
-  // - jika lat/lng diberikan → https://www.google.com/maps/search/?api=1&query=lat,lng
-  // - kalau tidak ada keduanya → https://www.google.com/maps
   static Uri _webMapsUri({String? query, double? lat, double? lng}) {
     if (query != null && query.trim().isNotEmpty) {
       return Uri.https('www.google.com', '/maps/search/', {

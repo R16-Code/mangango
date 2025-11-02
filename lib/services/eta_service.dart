@@ -1,10 +1,4 @@
-// lib/services/eta_service.dart
-//
 // ETA (OpenRouteService) dengan fallback Haversine + cache Hive.
-// - Default mode: "driving-car"; on-demand: "foot-walking"
-// - Cache TTL default: 30 menit
-// - API key diambil dari --dart-define=ORS_KEY=... 
-
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
@@ -12,11 +6,11 @@ import 'package:hive/hive.dart';
 import 'package:mangango/utils/haversine.dart';
 
 class EtaResult {
-  final String mode;        // 'driving-car' atau 'foot-walking'
-  final double distanceKm;  // kilometer
-  final int durationMin;    // menit
-  final bool fromCache;     // true jika data diambil dari cache
-  final bool isFallback;    // true jika hasil dari estimasi Haversine (API gagal)
+  final String mode;  
+  final double distanceKm; 
+  final int durationMin;   
+  final bool fromCache;    
+  final bool isFallback;    
 
   const EtaResult({
     required this.mode,
@@ -33,20 +27,14 @@ class EtaResult {
 }
 
 class EtaService {
-  // MapBox API Key
   final String apiKey;
-
-  // Box cache khusus ETA
   final Box _cacheBox = Hive.box('eta_cache');
 
   EtaService({String? apiKeyOverride})
       : apiKey = apiKeyOverride ??
             const String.fromEnvironment('ORS_KEY', defaultValue: '');
 
-  /// Ambil ETA berbasis rute nyata menggunakan OpenRouteService.
-  ///
-  /// [mode] salah satu: 'driving-car' (default) atau 'foot-walking'.
-  /// [cacheTtl] TTL cache; default 30 menit.
+  // Ambil ETA berbasis rute nyata menggunakan OpenRouteService.
   Future<EtaResult> getEta({
     required double userLat,
     required double userLon,
@@ -55,7 +43,7 @@ class EtaService {
     String mode = 'driving-car',
     Duration cacheTtl = const Duration(minutes: 30),
   }) async {
-    // Validasi minimum
+    // Validasi
     if (!_isValidCoord(userLat, userLon) || !_isValidCoord(placeLat, placeLon)) {
       return _fallbackHaversine(
         userLat: userLat,
@@ -67,7 +55,7 @@ class EtaService {
       );
     }
 
-    // Key cache: bulatkan 3 desimal
+    // Key cache
     final key = _cacheKey(
       mode: mode,
       userLat: userLat,
@@ -76,7 +64,7 @@ class EtaService {
       placeLon: placeLon,
     );
 
-    // 1) Cek cache
+    // Cek cache
     final cached = _cacheBox.get(key);
     if (cached is Map) {
       final ts = cached['ts'];
@@ -94,13 +82,13 @@ class EtaService {
       }
     }
 
-    // 2) Coba panggil OpenRouteService (butuh API key)
+    // Panggil OpenRouteService (butuh API key)
     if (apiKey.isNotEmpty) {
       final url = Uri.parse(
         'https://api.openrouteservice.org/v2/directions/$mode'
         '?api_key=$apiKey'
-        '&start=${userLon},${userLat}'  // PERHATIAN: lon,lat (bukan lat,lon)
-        '&end=${placeLon},${placeLat}'  // PERHATIAN: lon,lat (bukan lat,lon)
+        '&start=${userLon},${userLat}' 
+        '&end=${placeLon},${placeLat}' 
       );
 
       try {
@@ -114,11 +102,11 @@ class EtaService {
             final properties = route['properties'] as Map;
             final summary = properties['summary'] as Map;
             
-            final distance = (summary['distance'] as num).toDouble(); // dalam meter
-            final duration = (summary['duration'] as num).toDouble(); // dalam detik
+            final distance = (summary['distance'] as num).toDouble(); 
+            final duration = (summary['duration'] as num).toDouble(); 
             
-            final distanceKm = distance / 1000.0; // meter -> km
-            final durationMin = (duration / 60.0).round(); // detik -> menit
+            final distanceKm = distance / 1000.0;
+            final durationMin = (duration / 60.0).round(); 
 
             final result = EtaResult(
               mode: mode,
@@ -143,11 +131,11 @@ class EtaService {
         }
       } catch (e) {
         print('ORS Exception: $e');
-        // Diabaikan; akan fallback
       }
     }
 
-    // 3) Fallback Haversine (tanpa API / error API / tanpa apiKey)
+    // Fallback Haversine 
+    // jika API tidak ada/eror
     final fallback = _fallbackHaversine(
       userLat: userLat,
       userLon: userLon,
@@ -157,7 +145,7 @@ class EtaService {
       markFromCache: false,
     );
 
-    // Simpan fallback juga (agar UI tetap cepat pada percobaan berikut)
+    // Simpan fallback
     _cacheBox.put(key, {
       'd': fallback.distanceKm,
       't': fallback.durationMin,
@@ -167,10 +155,6 @@ class EtaService {
 
     return fallback;
   }
-
-  // =======================
-  // Util internal
-  // =======================
 
   bool _isValidCoord(double lat, double lon) {
     if (lat.isNaN || lon.isNaN) return false;
@@ -187,7 +171,7 @@ class EtaService {
     required double placeLat,
     required double placeLon,
   }) {
-    String r(double v) => v.toStringAsFixed(3); // 3 desimal
+    String r(double v) => v.toStringAsFixed(3);
     return 'eta:$mode:${r(userLat)},${r(userLon)}->${r(placeLat)},${r(placeLon)}';
   }
 
@@ -200,8 +184,6 @@ class EtaService {
     required bool markFromCache,
   }) {
     final distKm = haversineDistanceKm(userLat, userLon, placeLat, placeLon);
-    
-    // Kecepatan asumsi konservatif untuk estimasi kasar
     final double kmPerHour = (mode == 'foot-walking') ? 5.0 : 25.0;
     final estMinutes = math.max(1, (distKm / kmPerHour * 60.0).round());
 

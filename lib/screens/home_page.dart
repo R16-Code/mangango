@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:hive/hive.dart'; // ⟵ tambah
-import 'package:mangango/models/pengguna.dart'; // ⟵ tambah
+import 'package:hive/hive.dart';
+import 'package:mangango/models/pengguna.dart';
 import 'package:mangango/models/tempat.dart';
 import 'package:mangango/router.dart';
 import 'package:mangango/services/lokasi_service.dart';
-import 'package:mangango/services/session_service.dart'; // ⟵ tambah
+import 'package:mangango/services/session_service.dart';
 import 'package:mangango/services/tempat_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,14 +18,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final LokasiService _lokasiService = LokasiService();
   final TempatService _tempatService = TempatService();
-  final SessionService _session = SessionService(); // ⟵ ganti AuthService → SessionService
+  final SessionService _session = SessionService();
 
   bool _loading = true;
-
-  // flag agar banner dapat di-dismiss
   bool _showDeniedBanner = false;
 
-  // posisi user & fallback default (Tugu Jogja)
+  // fallback default 
+  // (Tugu Jogja)
   Position? _userPosition;
   final double _fallbackLat = -7.782889;
   final double _fallbackLon = 110.367083;
@@ -33,10 +32,10 @@ class _HomePageState extends State<HomePage> {
   List<Tempat> _listTempat = [];
 
   final TextEditingController _searchController = TextEditingController();
-  double _minRating = 0; // akan diatur dari dropdown
-  double _maxDistanceKm = 10; // default cocok dengan opsi dropdown
+  double _minRating = 0;
+  double _maxDistanceKm = 10;
 
-  // Opsi dropdown
+  // untuk  dropdown
   final List<double> _ratingOptions = const [0, 1, 2, 3, 4, 5];
   final List<double> _distanceOptions = const [1, 2, 3, 5, 10];
 
@@ -46,23 +45,22 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _checkSession(); 
-    _loadUsername();          // ⟵ tetap
+    _loadUsername();   
     _initLoadPlaces();
   }
 
   Future<void> _checkSession() async {
     final userId = await _session.getLoggedInUserId();
     if (userId == null) {
-      // SESSION EXPIRED, REDIRECT KE LOGIN
+      // sesi expired -> login
       if (mounted) {
         Navigator.pushReplacementNamed(context, AppRouter.login);
       }
       return;
     }
   }
-  
+
   Future<void> _loadUsername() async {
-    // ⟵ SERAGAM DENGAN ProfilePage
     final userId = await _session.getLoggedInUserId();
     if (userId != null) {
       final box = Hive.box<Pengguna>('users');
@@ -78,7 +76,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initLoadPlaces() async {
-    setState(() => _loading = true); // ⟵ Tambah ini untuk immediate feedback
+    setState(() => _loading = true);
     
     final (pos, status) = await _lokasiService.getCurrentPosition();
 
@@ -168,12 +166,10 @@ class _HomePageState extends State<HomePage> {
       top: false,
       child: Column(
         children: [
-          // Header Section
           Container(
-            // ganti padding: tambahkan status bar height supaya konten tidak ketutup
             padding: EdgeInsets.fromLTRB(
               20,
-              MediaQuery.of(context).padding.top + 20, // ⟵ ini kuncinya
+              MediaQuery.of(context).padding.top + 20,
               20,
               20,
             ),
@@ -204,7 +200,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Search Bar
+                  // Search
                   TextField(
                     controller: _searchController,
                     onChanged: (_) => _refreshList(),
@@ -223,7 +219,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Filter Section
+                  // Filter
                   Row(
                     children: [
                       Expanded(
@@ -323,7 +319,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // Banner B2 (dismissible)
             if (_showDeniedBanner)
               Dismissible(
                 key: const Key('denied_banner'),

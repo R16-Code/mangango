@@ -95,7 +95,7 @@ return Scaffold(
               ),
               const SizedBox(height: 24),
 
-              // FORM CARD
+              // Form card
               Container(
                 constraints: const BoxConstraints(maxWidth: 400),
                 padding: const EdgeInsets.all(32),

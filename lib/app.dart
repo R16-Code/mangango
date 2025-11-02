@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mangango/router.dart';  // ⬅️ IMPORT ROUTER DARI FILE TERPISAH
+import 'package:mangango/router.dart';
 
 class App extends StatelessWidget {
   const App({super.key});

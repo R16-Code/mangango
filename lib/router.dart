@@ -1,4 +1,4 @@
-// lib/router.dart
+// mengatur navigasi
 import 'package:flutter/material.dart';
 import 'package:mangango/models/tempat.dart';
 import 'package:mangango/screens/detail_tempat_page.dart';
@@ -22,7 +22,7 @@ class AppRouter {
     splashGate: (_) => const SplashGate(),
     login: (_) => const LoginPage(),
     register: (_) => const RegisterPage(),
-    home: (_) => const HomePage(),  // ⬅️ INI SEHARUSNYA SUDAH BISA
+    home: (_) => const HomePage(), 
     profile: (_) => const ProfilePage(),
     feedback: (_) => const SaranKesanPage(),
   };

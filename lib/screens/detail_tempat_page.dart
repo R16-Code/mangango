@@ -6,8 +6,8 @@ import 'package:mangango/services/session_service.dart';
 import 'package:mangango/utils/haversine.dart';
 import 'package:mangango/utils/maps_launcher.dart';
 import 'package:mangango/services/currency_service.dart';
-import 'package:mangango/services/eta_service.dart'; // ⟵ TAMBAH
-import 'package:mangango/services/lokasi_service.dart'; // ⟵ TAMBAH
+import 'package:mangango/services/eta_service.dart';
+import 'package:mangango/services/lokasi_service.dart';
 
 class DetailTempatPage extends StatefulWidget {
   final Tempat tempat;
@@ -19,14 +19,13 @@ class DetailTempatPage extends StatefulWidget {
 
 class _DetailTempatPageState extends State<DetailTempatPage> {
   final CurrencyService _currency = CurrencyService();
-  final LokasiService _lokasiService = LokasiService(); // ⟵ TAMBAH
-  final EtaService _etaService = EtaService(); // ⟵ TAMBAH
+  final LokasiService _lokasiService = LokasiService();
+  final EtaService _etaService = EtaService();
   final SessionService _session = SessionService();
   
   Map<String, double>? _rates;
   bool _loadingRates = true;
 
-  // ⟵ TAMBAH: State untuk ETA system
   EtaResult? _etaResult;
   bool _loadingEta = false;
   bool _showAccuracyBadge = false;
@@ -38,7 +37,7 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     super.initState();
     _checkSession();
     _loadRates();
-    _initEta(); // ⟵ TAMBAH: Initialize ETA system
+    _initEta(); 
   }
 
   Future<void> _checkSession() async {
@@ -51,7 +50,6 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   }
 }
 
-  // ⟵ TAMBAH: Method untuk ETA system
   Future<void> _initEta() async {
     // Dapatkan posisi user
     final (position, _) = await _lokasiService.getCurrentPosition();
@@ -64,13 +62,12 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
   }
 
   Future<void> _loadEta({required String mode}) async {
-    // mode harus: 'driving-car' atau 'foot-walking' (sesuai ORS)
     final result = await _etaService.getEta(
       userLat: _userPosition!.latitude,
       userLon: _userPosition!.longitude,
       placeLat: widget.tempat.latitude,
       placeLon: widget.tempat.longitude,
-      mode: mode, // 'driving-car' atau 'foot-walking'
+      mode: mode,
     );
 
     if (!mounted) return;
@@ -80,10 +77,11 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
       _loadingEta = false;
       _walkingMode = (mode == 'foot-walking');
       
-      // Tampilkan badge "Akurasi diperbarui" jika data fresh dari ORS
+      // tampilkan teks
+      // akurasi diperbarui
       if (!result.fromCache && !result.isFallback) {
         _showAccuracyBadge = true;
-        // Auto-hide setelah 5 detik
+        // hilang setelah 5 detik
         Future.delayed(const Duration(seconds: 5), () {
           if (mounted) setState(() => _showAccuracyBadge = false);
         });
@@ -91,7 +89,6 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     });
   }
 
-  // ⟵ TAMBAH: Widget untuk menampilkan ETA info
 Widget _buildEtaInfo() {
   final t = widget.tempat;
   
@@ -181,7 +178,7 @@ Widget _buildEtaInfo() {
   );
 }
 
-// ⟵ BUAT METHOD BARU untuk tampilan card yang rapi
+// widget eta card
 Widget _buildEtaCard(String title, String value, {bool isEstimate = false, bool isLoading = false}) {
   return Container(
     padding: const EdgeInsets.all(16),
@@ -245,7 +242,7 @@ Widget _buildEtaCard(String title, String value, {bool isEstimate = false, bool 
   );
 }
 
-// ⟵ BUAT METHOD BARU untuk toggle button yang rapi
+// widget toggle button
 Widget _buildModeToggle() {
   return Container(
     padding: const EdgeInsets.all(4),
@@ -275,7 +272,7 @@ Widget _buildModeToggle() {
   );
 }
 
-// ⟵ BUAT METHOD BARU untuk individual toggle button
+// individu toggle button
 Widget _buildToggleButton({
   required IconData icon,
   required String label,
@@ -309,8 +306,6 @@ Widget _buildToggleButton({
   );
 }
 
-
-  // 🎯 TANPA PERUBAHAN: Semua method existing tetap sama
   Future<void> _loadRates() async {
     final rates = await _currency.fetchAndCacheRates();
     if (!mounted) return;
@@ -505,7 +500,7 @@ Widget _buildToggleButton({
                             ),
                             const SizedBox(height: 24),
 
-                            // 🆕 TAMBAH: Info ETA & Jarak
+                            // Info ETA & Jarak
                             _buildInfoSection(
                               icon: Icons.directions,
                               title: 'Perkiraan Jarak & Waktu',
@@ -515,7 +510,7 @@ Widget _buildToggleButton({
                             ),
                             const SizedBox(height: 20),
 
-                            // ===== Kisaran Harga =====
+                            // Kisaran Harga
                             _buildInfoSection(
                               icon: Icons.payments_outlined,
                               title: 'Kisaran Harga',
@@ -538,7 +533,7 @@ Widget _buildToggleButton({
                             ),
                             const SizedBox(height: 20),
 
-                            // ===== Jam Operasional =====
+                            // Jam Operasional
                             _buildInfoSection(
                               icon: Icons.access_time_outlined,
                               title: 'Jam Operasional',
@@ -557,7 +552,7 @@ Widget _buildToggleButton({
                 ),
               ),
 
-              // ===== Tombol Buka di Maps =====
+              // Tombol Buka di Maps
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -633,7 +628,6 @@ Widget _buildToggleButton({
     );
   }
 
-  // 🎯 TANPA PERUBAHAN: Helper methods existing
   Widget _buildInfoSection({
     required IconData icon,
     required String title,

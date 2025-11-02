@@ -37,10 +37,10 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (err == null) {
-      // Sukses → masuk Home
+      // Berhasil (home)
       Navigator.pushReplacementNamed(context, AppRouter.home);
     } else {
-      // Gagal → tampilkan pesan
+      // Gagal (pesan)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(err)),
       );
@@ -69,7 +69,7 @@ return Scaffold(
               ),
               const SizedBox(height: 24),
 
-              // FORM CARD
+              // form card
               Container(
                 constraints: const BoxConstraints(maxWidth: 400),
                 padding: const EdgeInsets.all(32),

@@ -4,7 +4,7 @@ class SessionService {
   static const String _boxName = 'session';
   static const String _keyUserId = 'userId';
   static const String _keyLoginTime = 'loginTime';
-  static const Duration sessionDuration = Duration(hours: 1); // ⬅️ 1 JAM
+  static const Duration sessionDuration = Duration(hours: 1);
 
   Future<Box<dynamic>> _getSessionBox() async {
     return await Hive.openBox<dynamic>(_boxName);
@@ -14,7 +14,7 @@ class SessionService {
     final box = await _getSessionBox();
     await box.putAll({
       _keyUserId: userId,
-      _keyLoginTime: DateTime.now().toIso8601String(), // ⬅️ TAMBAH INI
+      _keyLoginTime: DateTime.now().toIso8601String(),
     });
   }
 
@@ -23,14 +23,16 @@ class SessionService {
     final userId = box.get(_keyUserId);
     final loginTimeStr = box.get(_keyLoginTime);
     
-    // CEK: Data session ada?
+    // Cek session,
+    // apakah ada?
     if (userId == null || loginTimeStr == null) return null;
     
-    // CEK: Session expired?
+    // Cek session,
+    // expired?
     final loginTime = DateTime.parse(loginTimeStr);
     final now = DateTime.now();
     if (now.difference(loginTime) > sessionDuration) {
-      await logout(); // ⬅️ AUTO LOGOUT JIKA LEWAT 1 JAM
+      await logout();
       return null;
     }
     
@@ -39,6 +41,6 @@ class SessionService {
 
   Future<void> logout() async {
     final box = await _getSessionBox();
-    await box.clear(); // ⬅️ HAPUS SEMUA DATA SESSION
+    await box.clear(); // hapus sesi
   }
 }
