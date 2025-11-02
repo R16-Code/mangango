@@ -1,7 +1,7 @@
 import 'package:hive/hive.dart';
-import 'package:mangan_go/models/pengguna.dart';
-import 'package:mangan_go/services/session_service.dart';
-import 'package:mangan_go/utils/security.dart';
+import 'package:mangango/models/pengguna.dart';
+import 'package:mangango/services/session_service.dart';
+import 'package:mangango/utils/security.dart';
 
 class AuthService {
   final SessionService _sessionService = SessionService();

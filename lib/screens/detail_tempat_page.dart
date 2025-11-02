@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:mangan_go/models/tempat.dart';
-import 'package:mangan_go/router.dart';
-import 'package:mangan_go/utils/maps_launcher.dart';
-import 'package:mangan_go/services/currency_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:mangango/models/tempat.dart';
+import 'package:mangango/router.dart';
+import 'package:mangango/utils/haversine.dart';
+import 'package:mangango/utils/maps_launcher.dart';
+import 'package:mangango/services/currency_service.dart';
+import 'package:mangango/services/eta_service.dart'; // ⟵ TAMBAH
+import 'package:mangango/services/lokasi_service.dart'; // ⟵ TAMBAH
 
 class DetailTempatPage extends StatefulWidget {
   final Tempat tempat;
@@ -14,15 +18,286 @@ class DetailTempatPage extends StatefulWidget {
 
 class _DetailTempatPageState extends State<DetailTempatPage> {
   final CurrencyService _currency = CurrencyService();
-  Map<String, double>? _rates; // {'USD': x, 'EUR': y, 'JPY': z}
+  final LokasiService _lokasiService = LokasiService(); // ⟵ TAMBAH
+  final EtaService _etaService = EtaService(); // ⟵ TAMBAH
+  
+  Map<String, double>? _rates;
   bool _loadingRates = true;
+
+  // ⟵ TAMBAH: State untuk ETA system
+  EtaResult? _etaResult;
+  bool _loadingEta = false;
+  bool _showAccuracyBadge = false;
+  bool _walkingMode = false;
+  Position? _userPosition;
 
   @override
   void initState() {
     super.initState();
     _loadRates();
+    _initEta(); // ⟵ TAMBAH: Initialize ETA system
   }
 
+  // ⟵ TAMBAH: Method untuk ETA system
+  Future<void> _initEta() async {
+    // Dapatkan posisi user
+    final (position, _) = await _lokasiService.getCurrentPosition();
+    if (position != null) {
+      setState(() => _userPosition = position);
+    }
+
+    // Load ETA driving-car secara otomatis
+    _loadEta(mode: 'driving-car');
+  }
+
+  Future<void> _loadEta({required String mode}) async {
+    // mode harus: 'driving-car' atau 'foot-walking' (sesuai ORS)
+    final result = await _etaService.getEta(
+      userLat: _userPosition!.latitude,
+      userLon: _userPosition!.longitude,
+      placeLat: widget.tempat.latitude,
+      placeLon: widget.tempat.longitude,
+      mode: mode, // 'driving-car' atau 'foot-walking'
+    );
+
+    if (!mounted) return;
+    
+    setState(() {
+      _etaResult = result;
+      _loadingEta = false;
+      _walkingMode = (mode == 'foot-walking');
+      
+      // Tampilkan badge "Akurasi diperbarui" jika data fresh dari ORS
+      if (!result.fromCache && !result.isFallback) {
+        _showAccuracyBadge = true;
+        // Auto-hide setelah 5 detik
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) setState(() => _showAccuracyBadge = false);
+        });
+      }
+    });
+  }
+
+  // ⟵ TAMBAH: Widget untuk menampilkan ETA info
+Widget _buildEtaInfo() {
+  final t = widget.tempat;
+  
+  if (_userPosition == null) {
+    final haversineKm = haversineDistanceKm(
+      -7.782889, 110.367083,
+      t.latitude,
+      t.longitude,
+    );
+    return _buildEtaCard(
+      '📍 Perkiraan Jarak',
+      '${haversineKm.toStringAsFixed(1)} km',
+      isEstimate: true,
+    );
+  }
+
+  if (_loadingEta) {
+    return _buildEtaCard(
+      _walkingMode ? '🚶‍♂️ Menghitung Rute Jalan Kaki' : '🚗 Menghitung Rute Kendaraan',
+      'Mohon tunggu...',
+      isLoading: true,
+    );
+  }
+
+  if (_etaResult != null) {
+    final eta = _etaResult!;
+    final modeText = _walkingMode ? '🚶‍♂️ Jalan Kaki' : '🚗 Kendaraan';
+    final distanceText = '${eta.distanceKm.toStringAsFixed(1)} km';
+    final timeText = '${eta.durationMin} menit';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildEtaCard(
+          modeText,
+          '$timeText • $distanceText',
+          isEstimate: eta.isFallback,
+        ),
+        if (_showAccuracyBadge)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green, width: 1),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 14),
+                SizedBox(width: 6),
+                Text(
+                  'Akurasi diperbarui',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 12),
+        _buildModeToggle(),
+      ],
+    );
+  }
+
+  final haversineKm = haversineDistanceKm(
+    _userPosition!.latitude,
+    _userPosition!.longitude,
+    t.latitude,
+    t.longitude,
+  );
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildEtaCard(
+        '📍 Perkiraan Jarak',
+        '${haversineKm.toStringAsFixed(1)} km',
+        isEstimate: true,
+      ),
+      const SizedBox(height: 12),
+      _buildModeToggle(),
+    ],
+  );
+}
+
+// ⟵ BUAT METHOD BARU untuk tampilan card yang rapi
+Widget _buildEtaCard(String title, String value, {bool isEstimate = false, bool isLoading = false}) {
+  return Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1A1A1A),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: isEstimate ? Colors.orange.withOpacity(0.3) : Colors.white10,
+        width: 1,
+      ),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 4),
+              isLoading
+                  ? Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          value,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      value,
+                      style: TextStyle(
+                        color: isEstimate ? Colors.orange : Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// ⟵ BUAT METHOD BARU untuk toggle button yang rapi
+Widget _buildModeToggle() {
+  return Container(
+    padding: EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: Color(0xFF1A1A1A),
+      borderRadius: BorderRadius.circular(25),
+      border: Border.all(color: Colors.white10, width: 1),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildToggleButton(
+          icon: Icons.directions_car,
+          label: 'Kendaraan',
+          isActive: !_walkingMode,
+          onTap: () => _loadEta(mode: 'driving-car'),
+        ),
+        SizedBox(width: 4),
+        _buildToggleButton(
+          icon: Icons.directions_walk,
+          label: 'Jalan Kaki',
+          isActive: _walkingMode,
+          onTap: () => _loadEta(mode: 'foot-walking'),
+        ),
+      ],
+    ),
+  );
+}
+
+// ⟵ BUAT METHOD BARU untuk individual toggle button
+Widget _buildToggleButton({
+  required IconData icon,
+  required String label,
+  required bool isActive,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.blue : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: isActive ? Colors.white : Colors.white70),
+          SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+  // 🎯 TANPA PERUBAHAN: Semua method existing tetap sama
   Future<void> _loadRates() async {
     final rates = await _currency.fetchAndCacheRates();
     if (!mounted) return;
@@ -32,15 +307,11 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     });
   }
 
-  // =======================
-  // ====== UTIL TIME ======
-  // =======================
   DateTime _parseWibToday(String hhmm) {
     final parts = hhmm.split(':');
     final h = int.tryParse(parts.elementAt(0)) ?? 0;
     final m = int.tryParse(parts.elementAt(1)) ?? 0;
     final nowLocal = DateTime.now();
-    // WIB = UTC+7 → representasikan sebagai UTC (jam WIB - 7)
     final baseUtc = DateTime.utc(nowLocal.year, nowLocal.month, nowLocal.day, 0, 0);
     return baseUtc.add(Duration(hours: h - 7, minutes: m));
   }
@@ -51,7 +322,6 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     return '$hh:$mm';
   }
 
-  // WIB (as UTC) → offset target (jam dari UTC)
   String _fromWIBtoOffset(String hhmm, int targetOffsetHours) {
     final asUtc = _parseWibToday(hhmm);
     final atTarget = asUtc.add(Duration(hours: targetOffsetHours));
@@ -64,28 +334,23 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
           ? DateTime.utc(year + 1, 1, 1)
           : DateTime.utc(year, month + 1, 1);
       final lastOfMonth = firstOfNext.subtract(const Duration(days: 1));
-      // weekday: Mon=1..Sun=7 → mundur sampai Minggu
       return lastOfMonth.subtract(Duration(days: lastOfMonth.weekday % 7));
     }
 
     final y = dayUtc.year;
-    final start = lastSunday(y, 3).add(const Duration(hours: 1));   // 01:00 UTC (BST mulai)
-    final end   = lastSunday(y, 10).add(const Duration(hours: 1));  // 01:00 UTC (BST selesai)
+    final start = lastSunday(y, 3).add(const Duration(hours: 1));
+    final end   = lastSunday(y, 10).add(const Duration(hours: 1));
     return !dayUtc.isBefore(start) && !dayUtc.isAfter(end);
   }
 
   (String hhmm, String label) _fromWIBtoLondon(String hhmm) {
     final todayUtc = DateTime.now().toUtc();
     final isBST = _isLondonBST(todayUtc);
-    final offset = isBST ? 1 : 0; // UTC+1 saat BST, UTC+0 saat GMT
+    final offset = isBST ? 1 : 0;
     final converted = _fromWIBtoOffset(hhmm, offset);
     return (converted, isBST ? 'BST' : 'GMT');
   }
 
-  // ==========================
-  // ====== UTIL CURRENCY =====
-  // ==========================
-  // Parse "Rp20.000 - Rp50.000" / "20000-50000" / "Rp 25.000 s/d 60.000"
   (int? minIdr, int? maxIdr) _parseIdrRange(String text) {
     final digits = RegExp(r'(\d+)');
     final cleaned = text.replaceAll('.', '').replaceAll(',', '');
@@ -125,40 +390,32 @@ class _DetailTempatPageState extends State<DetailTempatPage> {
     return _fmtMoney(conv(v), symbol: symbol, fraction: fraction);
   }
 
-  // ======================
-  // ====== MAP OPEN  =====
-  // ======================
-
-void _openMaps(Tempat t) {
-  MapsLauncher.openSmart(
-    t.urlMaps.trim(),
-    lat: t.latitude,
-    lng: t.longitude,
-    label: t.nama,
-  );
-}
-
+  void _openMaps(Tempat t) {
+    MapsLauncher.openSmart(
+      t.urlMaps.trim(),
+      lat: t.latitude,
+      lng: t.longitude,
+      label: t.nama,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = widget.tempat;
     
-    // ===== Waktu operasional =====
     final (bLondon, bLabel) = _fromWIBtoLondon(t.jamBuka);
     final (tLondon, tLabel) = _fromWIBtoLondon(t.jamTutup);
-    final bukaWITA = _fromWIBtoOffset(t.jamBuka, 8); // UTC+8
+    final bukaWITA = _fromWIBtoOffset(t.jamBuka, 8);
     final tutupWITA = _fromWIBtoOffset(t.jamTutup, 8);
-    final bukaWIT = _fromWIBtoOffset(t.jamBuka, 9);  // UTC+9
+    final bukaWIT = _fromWIBtoOffset(t.jamBuka, 9);
     final tutupWIT = _fromWIBtoOffset(t.jamTutup, 9);
 
-    // ===== Harga (IDR + konversi via API/CurrencyService) =====
     final (minIdr, maxIdr) = _parseIdrRange(t.kisaranHarga);
     final idrText = t.kisaranHarga.isNotEmpty ? t.kisaranHarga : 'Tidak diketahui';
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       appBar: AppBar(
-        
         backgroundColor: const Color(0xFF2A2A2A),
         foregroundColor: Colors.white,
         elevation: 0,
@@ -234,6 +491,16 @@ void _openMaps(Tempat t) {
                               ),
                             ),
                             const SizedBox(height: 24),
+
+                            // 🆕 TAMBAH: Info ETA & Jarak
+                            _buildInfoSection(
+                              icon: Icons.directions,
+                              title: 'Perkiraan Jarak & Waktu',
+                              children: [
+                                _buildEtaInfo(), // ⟵ Widget ETA baru
+                              ],
+                            ),
+                            const SizedBox(height: 20),
 
                             // ===== Kisaran Harga =====
                             _buildInfoSection(
@@ -353,6 +620,7 @@ void _openMaps(Tempat t) {
     );
   }
 
+  // 🎯 TANPA PERUBAHAN: Helper methods existing
   Widget _buildInfoSection({
     required IconData icon,
     required String title,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mangan_go/router.dart';
+import 'package:mangango/router.dart';
 
 class SaranKesanPage extends StatelessWidget {
   const SaranKesanPage({super.key});
@@ -31,28 +31,26 @@ class SaranKesanPage extends StatelessWidget {
             child: Column(
               children: [
                 _buildSectionCard(
-                  title: 'Kesan Pengembang',
+                  title: 'Kesan dan Saran untuk Mata Kuliah Pemrograman Mobile',
                   content:
-                      'Kami bangga telah menyelesaikan "Mangan Go" dengan pendekatan yang sederhana dan efisien. '
-                      'Fokus pada pemisahan logika ke Service dan penggunaan Hive sebagai database lokal membuat proyek ini mudah dipahami oleh pemula Flutter. '
-                      'Ini membuktikan bahwa fitur kompleks seperti LBS, hashing, dan konversi mata uang bisa diimplementasikan tanpa arsitektur berlebihan. '
+                      'Pak Bagus Muhammad Akbar, S.S.T., M.Kom',
+
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'Kesan',
+                  content:
+                      'Secara keseluruhan, mata kuliah ini sangat menarik dan menantang. Karena Flutter adalah hal yang benar-benar baru bagi saya, rasanya cukup memuaskan bisa belajar dari nol hingga akhirnya memahami dasar-dasar pembuatan aplikasi mobile.'
+                      'Saya sangat mengapresiasi proyek akhir yang membuat kami bisa langsung mempraktikkan teori menjadi sebuah aplikasi nyata. Ilmu yang dipelajari terasa sangat relevan dan berguna.'
+                      'Namun, sebagai pemula, saya sedikit kewalahan dengan kecepatan perkuliahan. Banyak konsep penting dalam Flutter (seperti manajemen state) yang penjelasannya terasa singkat, sehingga akhirnya kami harus banyak belajar mandiri untuk bisa memahami dan menyelesaikan tugas. Selain itu, tenggat waktu untuk tugas akhir terasa sangat singkat, apalagi bagi yang masih benar-benar baru seperti saya.'
                       'Kesederhanaan adalah kunci untuk presentasi yang jelas dan efektif!',
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
-                  title: 'Saran untuk Pengembangan Lanjut',
+                  title: 'Saran',
                   content:
-                      'Untuk pengembangan ke depan, disarankan untuk:\n\n'
-                      '1. Integrasi dengan API Maps sungguhan untuk tampilan peta yang lebih baik.\n'
-                      '2. Menggunakan state management seperti Provider/Riverpod untuk skala aplikasi lebih besar.\n'
-                      '3. Implementasi fitur Favorite dengan penyimpanan di Hive.',
-                ),
-                const SizedBox(height: 16),
-                _buildSectionCard(
-                  title: 'Catatan',
-                  content:
-                      'Aplikasi ini dibangun menggunakan Flutter dan hanya mengandalkan setState() untuk manajemen status.',
-                  italic: true,
+                      'Saran saya, mungkin untuk angkatan berikutnya, bisa dipertimbangkan untuk menambahkan sesi khusus membahas konsep-konsep inti Flutter lebih dalam atau memberikan tenggat waktu yang lebih longgar untuk proyek akhir, agar kualitas hasil belajar dan aplikasi yang dibuat bisa lebih optimal.'
+                      'Terima kasih atas pengalaman belajarnya yang sangan memuaskan!😀',
                 ),
               ],
             ),

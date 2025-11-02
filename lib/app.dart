@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mangan_go/router.dart';
+import 'package:mangango/router.dart';  // ⬅️ IMPORT ROUTER DARI FILE TERPISAH
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -10,12 +10,10 @@ class App extends StatelessWidget {
       title: 'Mangan Go - Jogja Food Finder',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Tema sederhana, bisa disesuaikan nanti
         primarySwatch: Colors.teal,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Inter', // Contoh font
+        fontFamily: 'Inter',
       ),
-      // Mendaftarkan semua rute yang sudah didefinisikan di AppRouter
       initialRoute: AppRouter.splashGate,
       routes: AppRouter.routes,
       onGenerateRoute: AppRouter.onGenerateRoute,

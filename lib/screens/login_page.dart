@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mangan_go/router.dart';
-import 'package:mangan_go/services/auth_service.dart';
+import 'package:mangango/router.dart';
+import 'package:mangango/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart'; // ⟵ tambah
-import 'package:mangan_go/models/pengguna.dart'; // ⟵ tambah
-import 'package:mangan_go/models/tempat.dart';
-import 'package:mangan_go/router.dart';
-import 'package:mangan_go/services/lokasi_service.dart';
-import 'package:mangan_go/services/session_service.dart'; // ⟵ tambah
-import 'package:mangan_go/services/tempat_service.dart';
+import 'package:mangango/models/pengguna.dart'; // ⟵ tambah
+import 'package:mangango/models/tempat.dart';
+import 'package:mangango/router.dart';
+import 'package:mangango/services/lokasi_service.dart';
+import 'package:mangango/services/session_service.dart'; // ⟵ tambah
+import 'package:mangango/services/tempat_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,11 +34,11 @@ class _HomePageState extends State<HomePage> {
 
   final TextEditingController _searchController = TextEditingController();
   double _minRating = 0; // akan diatur dari dropdown
-  double _maxDistanceKm = 30; // default cocok dengan opsi dropdown
+  double _maxDistanceKm = 10; // default cocok dengan opsi dropdown
 
   // Opsi dropdown
   final List<double> _ratingOptions = const [0, 1, 2, 3, 4, 5];
-  final List<double> _distanceOptions = const [1, 2, 3, 5, 10, 15, 20, 30];
+  final List<double> _distanceOptions = const [1, 2, 3, 5, 10];
 
   String _username = 'User';
 
@@ -66,21 +66,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initLoadPlaces() async {
+    setState(() => _loading = true); // ⟵ Tambah ini untuk immediate feedback
+    
     final (pos, status) = await _lokasiService.getCurrentPosition();
 
     if (pos != null) {
       _userPosition = pos;
       _showDeniedBanner = false;
     } else {
-      // pakai fallback (Tugu Jogja)
-      _userPosition = null; // kita kirim null ke service, lalu service pakai fallback lat/lon
+      _userPosition = null;
       if (status == "denied" || status == "denied_forever") {
-        _showDeniedBanner = true; // tampil banner
+        _showDeniedBanner = true;
       }
     }
 
     _refreshList();
-    setState(() => _loading = false);
+    if (mounted) {
+      setState(() => _loading = false);
+    }
   }
 
   void _refreshList() {
@@ -100,7 +103,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _searchController.clear();
       _minRating = 0;
-      _maxDistanceKm = 30;
+      _maxDistanceKm = 10;
     });
     _refreshList();
   }

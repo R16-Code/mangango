@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mangan_go/router.dart';
-import 'package:mangan_go/services/session_service.dart';
+import 'package:mangango/router.dart';
+import 'package:mangango/services/session_service.dart';
 
 class SplashGate extends StatefulWidget {
   const SplashGate({super.key});

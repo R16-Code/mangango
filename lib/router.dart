@@ -1,12 +1,13 @@
+// lib/router.dart
 import 'package:flutter/material.dart';
-import 'package:mangan_go/models/tempat.dart';
-import 'package:mangan_go/screens/detail_tempat_page.dart';
-import 'package:mangan_go/screens/home_page.dart';
-import 'package:mangan_go/screens/login_page.dart';
-import 'package:mangan_go/screens/profil_page.dart';
-import 'package:mangan_go/screens/register_page.dart';
-import 'package:mangan_go/screens/saran_kesan_page.dart';
-import 'package:mangan_go/screens/splash_gate.dart';
+import 'package:mangango/models/tempat.dart';
+import 'package:mangango/screens/detail_tempat_page.dart';
+import 'package:mangango/screens/home_page.dart';  // ⬅️ IMPORT INI
+import 'package:mangango/screens/login_page.dart';
+import 'package:mangango/screens/profil_page.dart';
+import 'package:mangango/screens/register_page.dart';
+import 'package:mangango/screens/saran_kesan_page.dart';
+import 'package:mangango/screens/splash_gate.dart';
 
 class AppRouter {
   static const String splashGate = '/';
@@ -21,7 +22,7 @@ class AppRouter {
     splashGate: (_) => const SplashGate(),
     login: (_) => const LoginPage(),
     register: (_) => const RegisterPage(),
-    home: (_) => const HomePage(),
+    home: (_) => const HomePage(),  // ⬅️ INI SEHARUSNYA SUDAH BISA
     profile: (_) => const ProfilePage(),
     feedback: (_) => const SaranKesanPage(),
   };

@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mangan_go/app.dart';
+import 'package:mangango/app.dart';
 
 void main() {
   testWidgets('App renders without crashing and shows title text', (WidgetTester tester) async {

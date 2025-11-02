@@ -4,8 +4,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:geolocator/geolocator.dart';
 import 'package:hive/hive.dart';
 
-import 'package:mangan_go/models/tempat.dart';
-import 'package:mangan_go/utils/haversine.dart';
+import 'package:mangango/models/tempat.dart';
+import 'package:mangango/utils/haversine.dart';
 
 class TempatService {
   final Box<Tempat> _tempatBox = Hive.box<Tempat>('places');
@@ -86,18 +86,13 @@ class TempatService {
   }) {
     var list = getAll();
 
-    // 1) Hitung jarak
-    if (userPos != null) {
+    // 1) Hitung jarak dengan optimasi
+    final useLat = userPos?.latitude ?? fallbackLat;
+    final useLon = userPos?.longitude ?? fallbackLon;
+    
+    if (useLat != null && useLon != null) {
       for (final t in list) {
-        t.distanceKm = haversineDistanceKm(
-          userPos.latitude, userPos.longitude, t.latitude, t.longitude,
-        );
-      }
-    } else if (fallbackLat != null && fallbackLon != null) {
-      for (final t in list) {
-        t.distanceKm = haversineDistanceKm(
-          fallbackLat, fallbackLon, t.latitude, t.longitude,
-        );
+        t.distanceKm = haversineDistanceKm(useLat, useLon, t.latitude, t.longitude);
       }
     } else {
       for (final t in list) {

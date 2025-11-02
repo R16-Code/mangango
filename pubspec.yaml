@@ -1,4 +1,4 @@
-name: mangan_go
+name: mangango
 description: Aplikasi pencarian tempat makan di Jogja dengan fokus setState dan Hive.
 publish_to: 'none'
 version: 1.0.0+1
