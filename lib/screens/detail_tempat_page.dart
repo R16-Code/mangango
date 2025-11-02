@@ -207,11 +207,11 @@ Widget _buildEtaCard(String title, String value, {bool isEstimate = false, bool 
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               isLoading
                   ? Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
@@ -219,10 +219,10 @@ Widget _buildEtaCard(String title, String value, {bool isEstimate = false, bool 
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           value,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 16,
                           ),
@@ -248,9 +248,9 @@ Widget _buildEtaCard(String title, String value, {bool isEstimate = false, bool 
 // ⟵ BUAT METHOD BARU untuk toggle button yang rapi
 Widget _buildModeToggle() {
   return Container(
-    padding: EdgeInsets.all(4),
+    padding: const EdgeInsets.all(4),
     decoration: BoxDecoration(
-      color: Color(0xFF1A1A1A),
+      color: const Color(0xFF1A1A1A),
       borderRadius: BorderRadius.circular(25),
       border: Border.all(color: Colors.white10, width: 1),
     ),
@@ -263,7 +263,7 @@ Widget _buildModeToggle() {
           isActive: !_walkingMode,
           onTap: () => _loadEta(mode: 'driving-car'),
         ),
-        SizedBox(width: 4),
+        const SizedBox(width: 4),
         _buildToggleButton(
           icon: Icons.directions_walk,
           label: 'Jalan Kaki',
@@ -285,7 +285,7 @@ Widget _buildToggleButton({
   return GestureDetector(
     onTap: onTap,
     child: Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isActive ? Colors.blue : Colors.transparent,
         borderRadius: BorderRadius.circular(20),
@@ -294,7 +294,7 @@ Widget _buildToggleButton({
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: isActive ? Colors.white : Colors.white70),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
