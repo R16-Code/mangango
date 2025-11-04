@@ -2,7 +2,6 @@ import 'package:hive/hive.dart';
 
 part 'tempat.g.dart'; // File ini digenerate oleh build_runner
 
-/// Adaptor typeId 1: Tempat
 @HiveType(typeId: 1)
 class Tempat extends HiveObject {
   @HiveField(0)
@@ -23,24 +22,17 @@ class Tempat extends HiveObject {
   @HiveField(5)
   String kisaranHarga;
 
-  /// Simpan rating sebagai double (mis. 4.6)
   @HiveField(6)
   double rating;
 
-  /// Jam buka dalam format "HH:mm"
   @HiveField(7)
   String jamBuka;
 
-  /// Jam tutup dalam format "HH:mm"
   @HiveField(8)
   String jamTutup;
 
-  /// URL Google Maps (opsional)
   @HiveField(9)
   String urlMaps;
-
-  /// Field non-persisten: jarak dari posisi user (Tidak ada anotasi HiveField,
-  /// jadi TIDAK ikut diserialisasi oleh Hive).
   double? distanceKm;
 
   Tempat({
@@ -57,7 +49,7 @@ class Tempat extends HiveObject {
     this.distanceKm,
   });
 
-  /// Factory untuk memuat dari JSON (assets seed)
+  // Factory untuk memuat dari JSON (assets seed)
   factory Tempat.fromJson(Map<String, dynamic> json) {
     return Tempat(
       id: json['id'] as int,
