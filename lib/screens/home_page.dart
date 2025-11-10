@@ -33,11 +33,11 @@ class _HomePageState extends State<HomePage> {
 
   final TextEditingController _searchController = TextEditingController();
   double _minRating = 0;
-  double _maxDistanceKm = 100;
+  double _maxDistanceKm = 50;
 
   // untuk  dropdown
   final List<double> _ratingOptions = const [0, 1, 2, 3, 4, 5];
-  final List<double> _distanceOptions = const [1, 2, 3, 5, 10, 100];
+  final List<double> _distanceOptions = const [1, 2, 3, 5, 10, 50];
 
   String _username = 'User';
 
@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _searchController.clear();
       _minRating = 0;
-      _maxDistanceKm = 100;
+      _maxDistanceKm = 50;
     });
     _refreshList();
   }

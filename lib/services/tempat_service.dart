@@ -70,7 +70,7 @@ class TempatService {
     required Position? userPos,
     String? searchKeyword,
     double minRating = 0,
-    double maxDistanceKm = 9999,
+    double maxDistanceKm = 50,
     double? fallbackLat,
     double? fallbackLon,
   }) {
