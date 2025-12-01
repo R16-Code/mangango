@@ -33,24 +33,26 @@ class SaranKesanPage extends StatelessWidget {
                 _buildSectionCard(
                   title: 'Kesan dan Saran untuk Mata Kuliah Pemrograman Mobile',
                   content:
-                      'Pak Bagus Muhammad Akbar, S.S.T., M.Kom',
+                      '',
 
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Kesan',
                   content:
-                      'Secara keseluruhan, mata kuliah ini sangat menarik dan menantang jiwa raga. Karena Flutter adalah hal yang benar-benar baru bagi saya, rasanya cukup memuaskan bisa belajar dari nol hingga akhirnya memahami dasar-dasar pembuatan aplikasi mobile.\n\n'
-                      'Saya sangat mengapresiasi proyek akhir yang membuat saya bisa langsung mempraktikkan teori menjadi sebuah aplikasi nyata. Ilmu yang dipelajari terasa sangat relevan dan berguna.\n\n'
-                      'Namun, sebagai pemula, saya sedikit kewalahan dengan materi yang ada. Banyak konsep penting dalam Flutter yang saya masih kurang paham, sehingga akhirnya saya harus banyak belajar mandiri untuk bisa memahami hal tersebut.\n\n'
-                      'Selain itu, menurut saya tenggat waktu untuk tugas akhir terasa sangat singkat, apalagi bagi yang masih benar-benar baru seperti saya.\n\n',
+                      'Secara keseluruhan, mata kuliah ini sangat menarik dan menantang jiwa raga. Karena Flutter adalah hal yang benar-benar baru bagi saya, rasanya cukup memuaskan bisa belajar dari nol hingga akhirnya memahami dasar-dasar pembuatan aplikasi mobile.\n\n',
                 ),
                 const SizedBox(height: 16),
                 _buildSectionCard(
                   title: 'Saran',
                   content:
-                      'Saran saya, mungkin untuk angkatan berikutnya, bisa dipertimbangkan dalam memberikan tenggat waktu yang lebih longgar untuk proyek akhir, agar kualitas hasil belajar dan aplikasi yang dibuat bisa lebih optimal.\n\n'
-                      'Terima kasih atas pengalaman belajarnya yang sangan memuaskan!😀',
+                      'Mungkin untuk tahun berikutnya bisa dipertimbangkan lagi dalam memberikan tenggat waktu yang lebih longgar untuk proyek akhirnya. Atau mungkin bisa langsung memberikan pengumpulan proyek akhir di spada sejak awal perkuliahan dimulai',
+                ),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  title: 'Terima kasih atas pengalamannya yang sangat menyenangkan!😀',
+                  content:
+                      '',
                 ),
               ],
             ),
