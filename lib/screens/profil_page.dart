@@ -101,11 +101,11 @@ class _ProfilePageState extends State<ProfilePage> {
       times: _user!.reminderTimes,
     );
 
-    await NotifService().showSimple('Tes Notifikasi', 'Notifikasi berhasil muncul 🎉');
+    await NotifService().showSimple('Pengingat makan disimpan', 'Notifikasi akan dijadwalkan');
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Pengingat makan disimpan & notifikasi dijadwalkan.')),
+      const SnackBar(content: Text('Pengingat makan diupdate')),
     );
   }
 

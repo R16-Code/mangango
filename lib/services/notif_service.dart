@@ -135,7 +135,7 @@ class NotifService {
     String body(int idx) => switch (idx) {
       0 => 'Waktunya sarapan Bos supaya kuat memulai hari 🍜',
       1 => 'Jangan lewatkan makan siangmu Bos ✨',
-      _ => 'Untuk mengisi tenaga malam ini mau makan apa? 🍽️',
+      _ => 'Jangan lupa untuk mengisi tenaga malam 🍽️',
     };
 
     for (var i = 0; i < times.length && i < 3; i++) {
